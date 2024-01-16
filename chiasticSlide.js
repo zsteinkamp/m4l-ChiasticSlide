@@ -52,11 +52,13 @@ function updateVolumes() {
     var tolerance = chainTurf * state.width
     if (distanceToNumber > tolerance) {
       //debug('VOLVAL ' + i + ' ZERO')
-      c.set('value', 0)
+      c.maxObj.message('float', 0.0)
+      //c.param.set('value', 0)
     } else {
       var newVol = (1.0 - distanceToNumber / tolerance) * 0.85
       //debug('VOLVAL ' + i + ' ' + newVol)
-      c.set('value', newVol)
+      c.maxObj.message('float', newVol)
+      //c.param.set('value', newVol)
     }
   })
 }
@@ -66,6 +68,7 @@ function sendStatus(str) {
 }
 
 function initialize() {
+  debug('INITIALIZE')
   var thisDevice = new LiveAPI('live_set this_device')
   var thisDevicePathTokens = thisDevice.unquotedpath.split(' ')
   if (thisDevicePathTokens.length != 5) {
@@ -95,19 +98,41 @@ function initialize() {
     return
   }
 
+  // properly dispose of created live.remote~ objects
+  for (var i = 0; i < state.chains.length; i++) {
+    state.chains[i].maxObj.message('id', 0)
+    this.patcher.remove(state.chains[i].maxObj)
+    debug('REMOVED ' + i)
+  }
   state.chains = []
+
   var currChain = 0
   while (currChain < 100) {
     var currChainPath =
       prevDevicePath + ' chains ' + currChain + ' mixer_device volume'
     //debug('CURR_CHAIN_PATH=' + currChainPath)
+
     var chainDeviceVolumeParam = new LiveAPI(currChainPath)
     if (!chainDeviceVolumeParam.path) {
       //debug('last one okay!')
       break
     }
-    //debug('Add Param: ' + chainDeviceVolumeParam.path)
-    state.chains.push(chainDeviceVolumeParam)
+    var scriptingName = 'remote' + currChain.toString()
+    var maxObj = this.patcher.newdefault(
+      0,
+      500 + currChain * 25,
+      'live.remote~'
+    )
+    maxObj.setattr('varname', scriptingName)
+    var deviceParamId = parseInt(chainDeviceVolumeParam.id)
+    debug('PARAM_ID: ' + deviceParamId + ' ' + scriptingName)
+    debug(chainDeviceVolumeParam.get('value'))
+    var named = this.patcher.message(scriptingName)
+    maxObj.message('id', deviceParamId)
+    state.chains.push({
+      maxObj: named,
+      param: chainDeviceVolumeParam,
+    })
     currChain += 1
   }
 
