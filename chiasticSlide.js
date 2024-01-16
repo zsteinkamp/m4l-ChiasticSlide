@@ -1,12 +1,13 @@
 autowatch = 1
+var MAX_PARAMS = 32
 inlets = 1
-outlets = 1
+outlets = MAX_PARAMS + 1
 
 setinletassist(0, '<Bang> to initialize, <Float> to fade.')
 setoutletassist(0, '<String> Status message to display.')
 OUTLET_STATUS = 0
 
-var debugLog = true
+var debugLog = false
 
 function debug() {
   if (debugLog) {
@@ -22,7 +23,10 @@ debug('reloaded')
 
 var state = {
   width: 1,
-  chains: [],
+  val: 0,
+  width: 2,
+  numChains: 0,
+  //chains: [],
 }
 
 function bang() {
@@ -45,22 +49,20 @@ function width(val) {
 }
 
 function updateVolumes() {
-  var chainTurf = 1 / (state.chains.length - 1)
-  state.chains.map(function (c, i) {
+  var chainTurf = 1 / (state.numChains - 1)
+  for (var i = 0; i < state.numChains; i++) {
     var myPerfectNumber = i * chainTurf
     var distanceToNumber = Math.abs(state.val - myPerfectNumber)
     var tolerance = chainTurf * state.width
     if (distanceToNumber > tolerance) {
       //debug('VOLVAL ' + i + ' ZERO')
-      c.maxObj.message('float', 0.0)
-      //c.param.set('value', 0)
+      outlet(i + 1, 0.0)
     } else {
       var newVol = (1.0 - distanceToNumber / tolerance) * 0.85
       //debug('VOLVAL ' + i + ' ' + newVol)
-      c.maxObj.message('float', newVol)
-      //c.param.set('value', newVol)
+      outlet(i + 1, newVol)
     }
-  })
+  }
 }
 
 function sendStatus(str) {
@@ -98,16 +100,16 @@ function initialize() {
     return
   }
 
-  // properly dispose of created live.remote~ objects
-  for (var i = 0; i < state.chains.length; i++) {
-    state.chains[i].maxObj.message('id', 0)
-    this.patcher.remove(state.chains[i].maxObj)
-    debug('REMOVED ' + i)
+  var jsObj = this.patcher.getnamed('jsObj')
+
+  // properly let go of devices for existing live.remote~ objects
+  for (var i = 0; i < MAX_PARAMS; i++) {
+    outlet(i + 1, ['id', 0])
+    //debug('REMOVED ' + (i + 1))
   }
-  state.chains = []
 
   var currChain = 0
-  while (currChain < 100) {
+  while (currChain < MAX_PARAMS) {
     var currChainPath =
       prevDevicePath + ' chains ' + currChain + ' mixer_device volume'
     //debug('CURR_CHAIN_PATH=' + currChainPath)
@@ -117,28 +119,17 @@ function initialize() {
       //debug('last one okay!')
       break
     }
-    var scriptingName = 'remote' + currChain.toString()
-    var maxObj = this.patcher.newdefault(
-      0,
-      500 + currChain * 25,
-      'live.remote~'
-    )
-    maxObj.setattr('varname', scriptingName)
     var deviceParamId = parseInt(chainDeviceVolumeParam.id)
-    debug('PARAM_ID: ' + deviceParamId + ' ' + scriptingName)
-    debug(chainDeviceVolumeParam.get('value'))
-    var named = this.patcher.message(scriptingName)
-    maxObj.message('id', deviceParamId)
-    state.chains.push({
-      maxObj: named,
-      param: chainDeviceVolumeParam,
-    })
+    debug('PARAM_ID: ' + deviceParamId)
+    outlet(currChain + 1, ['id', deviceParamId])
     currChain += 1
   }
 
-  if (state.chains.length > 0) {
-    sendStatus('OK - Set up ' + state.chains.length + ' chains.')
+  if (currChain > 0) {
+    sendStatus('OK - Set up ' + currChain + ' chains.')
   } else {
     sendStatus('ERROR: Not a rack to my left.')
   }
+  state.numChains = currChain
+  updateVolumes()
 }
