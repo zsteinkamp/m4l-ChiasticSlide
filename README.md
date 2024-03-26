@@ -18,12 +18,12 @@ Time becomes just another creative dimension, without ever losing connection wit
 
 ## Installation
 
-[Download the newest .amxd file from the frozen/ directory](https://github.com/zsteinkamp/m4l-ChiasticSlide/raw/main/frozen/ChiasticSlide%20v2.amxd) or clone this repository, and drag the `ChiasticSlide.amxd` device into a track in Ableton Live.
+[Download the .amxd file from the latest release](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases) or clone this repository, and drag the `ChiasticSlide.amxd` device into a track in Ableton Live.
 
 ## Changelog
 
-- 2024-01-15 [v2](https://github.com/zsteinkamp/m4l-ChiasticSlide/raw/main/frozen/ChiasticSlide%20v2.amxd) - Pretty big rework to fix an undo buffer flood bug.
-- 2024-01-09 [v1](https://github.com/zsteinkamp/m4l-ChiasticSlide/raw/main/frozen/ChiasticSlide%20v1.amxd) - Initial Release.
+- 2024-01-15 [v2](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v2/ChiasticSlide.v2.amxd) - Pretty big rework to fix an undo buffer flood bug.
+- 2024-01-09 v1 - Initial Release (download disabled).
 
 ## Usage
 
