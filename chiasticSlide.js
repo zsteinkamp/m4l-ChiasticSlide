@@ -1,20 +1,22 @@
 autowatch = 1
 var MAX_PARAMS = 32
 inlets = 1
-outlets = 3
+outlets = 4
 
-var debugLog = true
+var debugLog = false
 
 setinletassist(0, '<Bang> to initialize, <Float> to fade.')
 OUTLET_STATUS = 0
 OUTLET_VAL = 1
 OUTLET_IDS = 2
+OUTLET_NUM = 3
 setoutletassist(OUTLET_STATUS, '<String> Status message to display.')
 setoutletassist(OUTLET_VAL, '<chain idx, val> Volume value for given chain.')
 setoutletassist(
   OUTLET_IDS,
   '<chain idx, id, param_id> messages to map live.remote to device id param_id.'
 )
+setoutletassist(OUTLET_NUM, '<num_chains> number of chains mapped.')
 
 function debug() {
   if (debugLog) {
@@ -43,7 +45,6 @@ function bang() {
 }
 
 function fader(val) {
-  val = val / 100.0
   //debug('FLOAT: ' + val)
   state.val = val
   updateVolumes()
@@ -174,6 +175,7 @@ function initialize() {
 
   if (currChain > 0) {
     sendStatus('OK - Set up ' + currChain + ' chains.')
+    outlet(OUTLET_NUM, currChain)
   } else {
     sendStatus('ERROR: Cannot handle it.')
   }
