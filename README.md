@@ -24,7 +24,7 @@ Time becomes just another creative dimension, without ever losing connection wit
 
 ## Changelog
 
-- 2024-04-27 [v3](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v3/ChiasticSlide.v3.amxd) - Support group tracks. Provide a visual for volumes.
+- 2024-04-27 [v3](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v3/ChiasticSlide-v3.amxd) - Support group tracks. Provide a visual for volumes.
 - 2024-01-15 [v2](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v2/ChiasticSlide.v2.amxd) - Pretty big rework to fix an undo buffer flood bug.
 - 2024-01-09 v1 - Initial Release (download disabled).
 
