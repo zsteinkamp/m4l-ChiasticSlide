@@ -1,13 +1,20 @@
 autowatch = 1
 var MAX_PARAMS = 32
 inlets = 1
-outlets = MAX_PARAMS + 1
+outlets = 3
+
+var debugLog = true
 
 setinletassist(0, '<Bang> to initialize, <Float> to fade.')
-setoutletassist(0, '<String> Status message to display.')
 OUTLET_STATUS = 0
-
-var debugLog = false
+OUTLET_VAL = 1
+OUTLET_IDS = 2
+setoutletassist(OUTLET_STATUS, '<String> Status message to display.')
+setoutletassist(OUTLET_VAL, '<chain idx, val> Volume value for given chain.')
+setoutletassist(
+  OUTLET_IDS,
+  '<chain idx, id, param_id> messages to map live.remote to device id param_id.'
+)
 
 function debug() {
   if (debugLog) {
@@ -26,7 +33,7 @@ var state = {
   val: 0,
   width: 2,
   numChains: 0,
-  //chains: [],
+  chains: [],
 }
 
 function bang() {
@@ -56,11 +63,11 @@ function updateVolumes() {
     var tolerance = chainTurf * state.width
     if (distanceToNumber > tolerance) {
       //debug('VOLVAL ' + i + ' ZERO')
-      outlet(i + 1, 0.0)
+      outlet(OUTLET_VAL, [i + 1, 0.0])
     } else {
       var newVol = (1.0 - distanceToNumber / tolerance) * 0.85
       //debug('VOLVAL ' + i + ' ' + newVol)
-      outlet(i + 1, newVol)
+      outlet(OUTLET_VAL, [i + 1, newVol])
     }
   }
 }
@@ -69,15 +76,10 @@ function sendStatus(str) {
   outlet(OUTLET_STATUS, str)
 }
 
-function initialize() {
-  debug('INITIALIZE')
-  var thisDevice = new LiveAPI('live_set this_device')
+function getRackDevicePaths(thisDevice, volumeDevicePaths) {
   var thisDevicePathTokens = thisDevice.unquotedpath.split(' ')
-  if (thisDevicePathTokens.length != 5) {
-    sendStatus('ERROR: invalid path ' + thisDevicePathTokens.join(','))
-    return
-  }
-  var thisDeviceNum = parseInt(thisDevicePathTokens[4])
+  var tokenLen = thisDevicePathTokens.length
+  var thisDeviceNum = parseInt(thisDevicePathTokens[tokenLen - 1])
 
   if (isNaN(thisDeviceNum)) {
     sendStatus('ERROR: NaN device num :(')
@@ -91,7 +93,9 @@ function initialize() {
   //debug('DEVICENUM = ' + thisDeviceNum)
 
   var prevDevicePath =
-    thisDevicePathTokens.slice(0, 4).join(' ') + ' ' + (thisDeviceNum - 1)
+    thisDevicePathTokens.slice(0, tokenLen - 1).join(' ') +
+    ' ' +
+    (thisDeviceNum - 1)
   //debug('PREVDEVICEPATH=' + prevDevicePath)
 
   var prevDevice = new LiveAPI(prevDevicePath)
@@ -100,35 +104,78 @@ function initialize() {
     return
   }
 
-  var jsObj = this.patcher.getnamed('jsObj')
-
-  // properly let go of devices for existing live.remote~ objects
-  for (var i = 0; i < MAX_PARAMS; i++) {
-    outlet(i + 1, ['id', 0])
-    //debug('REMOVED ' + (i + 1))
-  }
-
-  var currChain = 0
-  while (currChain < MAX_PARAMS) {
+  var liveApi = new LiveAPI()
+  var currChain
+  for (currChain = 0; currChain < MAX_PARAMS; currChain++) {
     var currChainPath =
       prevDevicePath + ' chains ' + currChain + ' mixer_device volume'
     //debug('CURR_CHAIN_PATH=' + currChainPath)
 
-    var chainDeviceVolumeParam = new LiveAPI(currChainPath)
-    if (!chainDeviceVolumeParam.path) {
+    liveApi.path = currChainPath
+    if (!liveApi.path) {
       //debug('last one okay!')
+      return
+    }
+    volumeDevicePaths.push(currChainPath)
+  }
+}
+
+function getGroupTrackPaths(thisDevice, volumeDevicePaths) {
+  var thisTrack = new LiveAPI(thisDevice.get('canonical_parent'))
+  if (thisTrack.get('is_foldable')) {
+    // THIS IS A GROUP TRACK
+    //debug('GROUP TRACK')
+    var api = new LiveAPI(this.patcher, 'live_set')
+    var trackCount = api.getcount('tracks')
+    //debug('THIS TRACK', thisTrack.id)
+
+    for (var index = 0; index < trackCount; index++) {
+      api.path = 'live_set tracks ' + index
+      //debug(api.path)
+      if (parseInt(api.get('group_track')[1]) === parseInt(thisTrack.id)) {
+        volumeDevicePaths.push(api.unquotedpath + ' mixer_device volume')
+        //debug('FOUND CHILD', api.id, api.unquotedpath + ' mixer_device volume')
+      }
+    }
+  }
+}
+
+function initialize() {
+  debug('INITIALIZE')
+  var thisDevice = new LiveAPI('live_set this_device')
+
+  // populate volumeDevicePaths either from a rack device (instrument or effect)
+  // or as the parent of a track group
+  var volumeDevicePaths = []
+  getRackDevicePaths(thisDevice, volumeDevicePaths)
+  if (volumeDevicePaths.length === 0) {
+    getGroupTrackPaths(thisDevice, volumeDevicePaths)
+  }
+
+  // properly let go of devices for existing live.remote~ objects
+  for (var i = 0; i < MAX_PARAMS; i++) {
+    outlet(OUTLET_IDS, [i + 1, 'id', 0])
+    //debug('REMOVED ' + (i + 1))
+  }
+
+  var lookupApi = new LiveAPI()
+  var currChain
+  for (currChain = 0; currChain < volumeDevicePaths.length; currChain++) {
+    var currChainPath = volumeDevicePaths[currChain]
+    lookupApi.path = currChainPath
+    if (!lookupApi.path) {
+      debug('last one okay!')
       break
     }
-    var deviceParamId = parseInt(chainDeviceVolumeParam.id)
+    var deviceParamId = parseInt(lookupApi.id)
     debug('PARAM_ID: ' + deviceParamId)
-    outlet(currChain + 1, ['id', deviceParamId])
-    currChain += 1
+    outlet(OUTLET_IDS, [currChain + 1, 'id', deviceParamId])
   }
 
   if (currChain > 0) {
     sendStatus('OK - Set up ' + currChain + ' chains.')
   } else {
-    sendStatus('ERROR: Not a rack to my left.')
+    sendStatus('ERROR: Cannot handle it.')
   }
   state.numChains = currChain
   updateVolumes()
