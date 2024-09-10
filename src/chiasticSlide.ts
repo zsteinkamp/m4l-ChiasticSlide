@@ -60,20 +60,21 @@ debug('reloaded')
 var state = {
   pos: 0,
   width: 90,
-  curve: 0,
+  curve: 1,
   minVol: 0,
   maxVol: 1,
   numChains: 0,
-  colors: [] as number[]
+  colors: [] as number[],
+  status: ""
 }
 
 function bang() {
   //debug('INIT')
-  sendStatus('Initializing...')
+  setStatus('Initializing...')
   initialize()
 }
 
-const ARROW_LEN = 0.50
+const ARROW_LEN = 0.75
 const BALL_DIST = 0.75
 const BALL_RADIUS = 0.15
 
@@ -89,6 +90,29 @@ function draw() {
   //sketch.gllinewidth(10)
   //sketch.circle(BALL_DIST, 0, 360)
 
+  // width arc
+  const halfW = state.width / 2.0
+  const arcColor = max.getcolor('live_control_selection')
+  arcColor[3] = 0.1 / state.curve // adjust opacity by curve
+  sketch.glcolor(arcColor)
+  sketch.moveto(0, 0, 0)
+  let startDeg = adjustDeg(state.pos - halfW)
+  let endDeg = adjustDeg(state.pos + halfW)
+  //debug('START: ' + startDeg + ' END: ' + endDeg)
+  sketch.circle(ARROW_LEN, startDeg, endDeg)
+
+  // position line
+  sketch.glcolor(max.getcolor('live_lcd_title'))
+  sketch.moveto(0, 0, 0)
+  pos = polarToXY(state.pos, ARROW_LEN)
+  sketch.gllinewidth(2)
+  sketch.line(pos.x, pos.y, 0)
+
+  // center circle
+  sketch.moveto(0, 0, 0)
+  sketch.glcolor(max.getcolor('live_lcd_frame'))
+  sketch.circle(0.1, 0, 360)
+
   // balls
   //debug('DRAW BALLS')
   //debug('COLORS: ' + state.colors.join(', '))
@@ -103,29 +127,19 @@ function draw() {
     sketch.circle(BALL_RADIUS, 0, 360)
   }
 
-  // width arc
-  const halfW = state.width / 2.0
-  sketch.glcolor(max.getcolor('live_control_selection'))
-  sketch.moveto(0, 0, 0)
-  sketch.gllinewidth(2)
-  let startDeg = adjustDeg(state.pos - halfW)
-  let endDeg = adjustDeg(state.pos + halfW)
-  //debug('START: ' + startDeg + ' END: ' + endDeg)
-  sketch.framecircle(ARROW_LEN, startDeg, endDeg)
-
-  // position line
+  // status
+  sketch.moveto(0, -0.95, 0)
+  sketch.fontsize(8)
+  sketch.textalign("center", "bottom")
   sketch.glcolor(max.getcolor('live_lcd_title'))
-  sketch.moveto(0, 0, 0)
-  pos = polarToXY(state.pos, ARROW_LEN)
-  sketch.gllinewidth(2)
-  sketch.line(pos.x, pos.y, 0)
-
-  // center circle
-  sketch.moveto(0, 0, 0)
-  sketch.glcolor(max.getcolor('live_lcd_frame'))
-  sketch.circle(0.1, 0, 360)
+  sketch.text(state.status)
 
   refresh()
+}
+
+function setStatus(status: string) {
+  state.status = status
+  draw()
 }
 
 function pos(val: number) {
@@ -162,9 +176,9 @@ function curve(val: number) {
   updateVolumes()
 }
 
-function lerp(val: number, min: number, max: number) {
-  const ret = Math.min(min, max) + (Math.abs(max - min) * val)
-  //debug('VAL=' + val + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
+function lerp(val: number, min: number, max: number, curve: number) {
+  const ret = Math.min(min, max) + (Math.abs(max - min) * (val ** curve))
+  //debug('VAL=' + val + ' CURVE=' + curve + ' VALC=' + (val ** curve) + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
   return ret
 }
 
@@ -180,17 +194,11 @@ function updateVolumes() {
     let volume = Math.max(1 - (delta / halfW), 0)
 
     // min/max
-    volume = lerp(volume, state.minVol, state.maxVol)
+    volume = lerp(volume, state.minVol, state.maxVol, state.curve)
 
     //debug('VOLUME: ' + volume)
     outlet(OUTLET_VAL, [i + 1, volume * 0.85])
   }
-}
-
-function sendStatus(str: string) {
-  // TODO do this in JS
-  //outlet(OUTLET_STATUS, str)
-  debug('STATUS: ' + str)
 }
 
 function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
@@ -199,11 +207,11 @@ function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
   var thisDeviceNum = parseInt(thisDevicePathTokens[tokenLen - 1])
 
   if (isNaN(thisDeviceNum)) {
-    sendStatus('ERROR: NaN device num :(')
+    setStatus('ERROR: NaN device num :(')
     return
   }
   if (thisDeviceNum === 0) {
-    sendStatus('ERROR: cannot be first device')
+    // will not be first device if following a rack
     return
   }
 
@@ -217,13 +225,17 @@ function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
 
   var prevDevice = new LiveAPI(() => { }, prevDevicePath)
   if (!prevDevice.get('can_have_chains')) {
-    sendStatus('ERROR: no chains allowed in prev device')
+    // prev device needs to support chains
+    return
+  }
+  const chains = prevDevice.get('chains')
+  if (!chains) {
+    // no chains
     return
   }
 
   //debug('NUMCHAINS: ' + prevDevice.get('chains').length)
   const chainIds = prevDevice.get('chains').filter((e: any) => e !== 'id')
-
 
   //debug('CHAINIDS: ' + chainIds.join(', '))
 
@@ -301,9 +313,9 @@ function initialize() {
   }
 
   if (currChain > 0) {
-    sendStatus('OK - Set up ' + currChain + ' chains.')
+    setStatus('')
   } else {
-    sendStatus('ERROR: Cannot handle it.')
+    setStatus('ERR: Put me after a rack or in a group.')
   }
   state.numChains = currChain
   //debug('CHAINS: ' + state.numChains)

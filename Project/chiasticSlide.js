@@ -43,18 +43,19 @@ debug('reloaded');
 var state = {
     pos: 0,
     width: 90,
-    curve: 0,
+    curve: 1,
     minVol: 0,
     maxVol: 1,
     numChains: 0,
-    colors: []
+    colors: [],
+    status: ""
 };
 function bang() {
     //debug('INIT')
-    sendStatus('Initializing...');
+    setStatus('Initializing...');
     initialize();
 }
-var ARROW_LEN = 0.50;
+var ARROW_LEN = 0.75;
 var BALL_DIST = 0.75;
 var BALL_RADIUS = 0.15;
 function draw() {
@@ -66,6 +67,26 @@ function draw() {
     //sketch.glcolor(max.getcolor('live_lcd_frame'))
     //sketch.gllinewidth(10)
     //sketch.circle(BALL_DIST, 0, 360)
+    // width arc
+    var halfW = state.width / 2.0;
+    var arcColor = max.getcolor('live_control_selection');
+    arcColor[3] = 0.1 / state.curve; // adjust opacity by curve
+    sketch.glcolor(arcColor);
+    sketch.moveto(0, 0, 0);
+    var startDeg = adjustDeg(state.pos - halfW);
+    var endDeg = adjustDeg(state.pos + halfW);
+    //debug('START: ' + startDeg + ' END: ' + endDeg)
+    sketch.circle(ARROW_LEN, startDeg, endDeg);
+    // position line
+    sketch.glcolor(max.getcolor('live_lcd_title'));
+    sketch.moveto(0, 0, 0);
+    pos = polarToXY(state.pos, ARROW_LEN);
+    sketch.gllinewidth(2);
+    sketch.line(pos.x, pos.y, 0);
+    // center circle
+    sketch.moveto(0, 0, 0);
+    sketch.glcolor(max.getcolor('live_lcd_frame'));
+    sketch.circle(0.1, 0, 360);
     // balls
     //debug('DRAW BALLS')
     //debug('COLORS: ' + state.colors.join(', '))
@@ -79,26 +100,17 @@ function draw() {
         sketch.moveto(pos.x, pos.y, 0);
         sketch.circle(BALL_RADIUS, 0, 360);
     }
-    // width arc
-    var halfW = state.width / 2.0;
-    sketch.glcolor(max.getcolor('live_control_selection'));
-    sketch.moveto(0, 0, 0);
-    sketch.gllinewidth(2);
-    var startDeg = adjustDeg(state.pos - halfW);
-    var endDeg = adjustDeg(state.pos + halfW);
-    //debug('START: ' + startDeg + ' END: ' + endDeg)
-    sketch.framecircle(ARROW_LEN, startDeg, endDeg);
-    // position line
+    // status
+    sketch.moveto(0, -0.95, 0);
+    sketch.fontsize(8);
+    sketch.textalign("center", "bottom");
     sketch.glcolor(max.getcolor('live_lcd_title'));
-    sketch.moveto(0, 0, 0);
-    pos = polarToXY(state.pos, ARROW_LEN);
-    sketch.gllinewidth(2);
-    sketch.line(pos.x, pos.y, 0);
-    // center circle
-    sketch.moveto(0, 0, 0);
-    sketch.glcolor(max.getcolor('live_lcd_frame'));
-    sketch.circle(0.1, 0, 360);
+    sketch.text(state.status);
     refresh();
+}
+function setStatus(status) {
+    state.status = status;
+    draw();
 }
 function pos(val) {
     //debug('FLOAT: ' + val)
@@ -129,9 +141,9 @@ function curve(val) {
     draw();
     updateVolumes();
 }
-function lerp(val, min, max) {
-    var ret = Math.min(min, max) + (Math.abs(max - min) * val);
-    //debug('VAL=' + val + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
+function lerp(val, min, max, curve) {
+    var ret = Math.min(min, max) + (Math.abs(max - min) * (Math.pow(val, curve)));
+    //debug('VAL=' + val + ' CURVE=' + curve + ' VALC=' + (val ** curve) + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
     return ret;
 }
 function updateVolumes() {
@@ -145,26 +157,21 @@ function updateVolumes() {
         }
         var volume = Math.max(1 - (delta / halfW), 0);
         // min/max
-        volume = lerp(volume, state.minVol, state.maxVol);
+        volume = lerp(volume, state.minVol, state.maxVol, state.curve);
         //debug('VOLUME: ' + volume)
         outlet(OUTLET_VAL, [i + 1, volume * 0.85]);
     }
-}
-function sendStatus(str) {
-    // TODO do this in JS
-    //outlet(OUTLET_STATUS, str)
-    debug('STATUS: ' + str);
 }
 function getRackDevicePaths(thisDevice, volumeDevicePaths) {
     var thisDevicePathTokens = thisDevice.unquotedpath.split(' ');
     var tokenLen = thisDevicePathTokens.length;
     var thisDeviceNum = parseInt(thisDevicePathTokens[tokenLen - 1]);
     if (isNaN(thisDeviceNum)) {
-        sendStatus('ERROR: NaN device num :(');
+        setStatus('ERROR: NaN device num :(');
         return;
     }
     if (thisDeviceNum === 0) {
-        sendStatus('ERROR: cannot be first device');
+        // will not be first device if following a rack
         return;
     }
     //debug('DEVICENUM = ' + thisDeviceNum)
@@ -174,7 +181,12 @@ function getRackDevicePaths(thisDevice, volumeDevicePaths) {
     //debug('PREVDEVICEPATH=' + prevDevicePath)
     var prevDevice = new LiveAPI(function () { }, prevDevicePath);
     if (!prevDevice.get('can_have_chains')) {
-        sendStatus('ERROR: no chains allowed in prev device');
+        // prev device needs to support chains
+        return;
+    }
+    var chains = prevDevice.get('chains');
+    if (!chains) {
+        // no chains
         return;
     }
     //debug('NUMCHAINS: ' + prevDevice.get('chains').length)
@@ -244,10 +256,10 @@ function initialize() {
         outlet(OUTLET_IDS, [currChain + 1, 'id', deviceParamId]);
     }
     if (currChain > 0) {
-        sendStatus('OK - Set up ' + currChain + ' chains.');
+        setStatus('');
     }
     else {
-        sendStatus('ERROR: Cannot handle it.');
+        setStatus('ERR: Put me after a rack or in a group.');
     }
     state.numChains = currChain;
     //debug('CHAINS: ' + state.numChains)
