@@ -6,8 +6,8 @@ sketch.default2d();
 sketch.glloadidentity();
 sketch.glortho(-1, 1, -1, 1, -1, 1);
 
-const debugLog = true
-//const debugLog = false
+//const debugLog = true
+const debugLog = false
 
 setinletassist(0, '<Bang> to initialize, <Float> to fade.')
 const MAX_PARAMS = 32
@@ -164,7 +164,7 @@ function curve(val: number) {
 
 function lerp(val: number, min: number, max: number) {
   const ret = Math.min(min, max) + (Math.abs(max - min) * val)
-  debug('VAL=' + val + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
+  //debug('VAL=' + val + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
   return ret
 }
 

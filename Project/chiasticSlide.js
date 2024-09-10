@@ -4,8 +4,8 @@ outlets = 2;
 sketch.default2d();
 sketch.glloadidentity();
 sketch.glortho(-1, 1, -1, 1, -1, 1);
-var debugLog = true;
-//const debugLog = false
+//const debugLog = true
+var debugLog = false;
 setinletassist(0, '<Bang> to initialize, <Float> to fade.');
 var MAX_PARAMS = 32;
 var OUTLET_VAL = 0;
@@ -131,7 +131,7 @@ function curve(val) {
 }
 function lerp(val, min, max) {
     var ret = Math.min(min, max) + (Math.abs(max - min) * val);
-    debug('VAL=' + val + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret);
+    //debug('VAL=' + val + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
     return ret;
 }
 function updateVolumes() {
