@@ -69,13 +69,12 @@ function draw() {
     //sketch.circle(BALL_DIST, 0, 360)
     // width arc
     var halfW = state.width / 2.0;
-    var arcColor = max.getcolor('live_control_selection');
-    arcColor[3] = 0.1 / state.curve; // adjust opacity by curve
-    sketch.glcolor(arcColor);
     sketch.moveto(0, 0, 0);
+    var arcColor = max.getcolor('live_control_selection');
+    arcColor[3] = 0.1 / state.curve;
+    sketch.glcolor(arcColor);
     var startDeg = adjustDeg(state.pos - halfW);
     var endDeg = adjustDeg(state.pos + halfW);
-    //debug('START: ' + startDeg + ' END: ' + endDeg)
     sketch.circle(ARROW_LEN, startDeg, endDeg);
     // position line
     sketch.glcolor(max.getcolor('live_lcd_title'));

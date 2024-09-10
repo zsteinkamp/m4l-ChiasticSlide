@@ -92,13 +92,12 @@ function draw() {
 
   // width arc
   const halfW = state.width / 2.0
-  const arcColor = max.getcolor('live_control_selection')
-  arcColor[3] = 0.1 / state.curve // adjust opacity by curve
-  sketch.glcolor(arcColor)
   sketch.moveto(0, 0, 0)
+  const arcColor = max.getcolor('live_control_selection')
+  arcColor[3] = 0.1 / state.curve
+  sketch.glcolor(arcColor)
   let startDeg = adjustDeg(state.pos - halfW)
   let endDeg = adjustDeg(state.pos + halfW)
-  //debug('START: ' + startDeg + ' END: ' + endDeg)
   sketch.circle(ARROW_LEN, startDeg, endDeg)
 
   // position line
