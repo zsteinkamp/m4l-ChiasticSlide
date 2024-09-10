@@ -61,6 +61,8 @@ var state = {
   pos: 0,
   width: 90,
   curve: 0,
+  minVol: 0,
+  maxVol: 1,
   numChains: 0,
   colors: [] as number[]
 }
@@ -71,7 +73,7 @@ function bang() {
   initialize()
 }
 
-const ARROW_LEN = 0.55
+const ARROW_LEN = 0.50
 const BALL_DIST = 0.75
 const BALL_RADIUS = 0.15
 
@@ -108,7 +110,7 @@ function draw() {
   sketch.gllinewidth(2)
   let startDeg = adjustDeg(state.pos - halfW)
   let endDeg = adjustDeg(state.pos + halfW)
-  debug('START: ' + startDeg + ' END: ' + endDeg)
+  //debug('START: ' + startDeg + ' END: ' + endDeg)
   sketch.framecircle(ARROW_LEN, startDeg, endDeg)
 
   // position line
@@ -133,6 +135,20 @@ function pos(val: number) {
   updateVolumes()
 }
 
+function minVol(val: number) {
+  //debug('FLOAT: ' + val)
+  state.minVol = val / 100
+  draw()
+  updateVolumes()
+}
+
+function maxVol(val: number) {
+  //debug('FLOAT: ' + val)
+  state.maxVol = val / 100
+  draw()
+  updateVolumes()
+}
+
 function width(val: number) {
   //debug('WIDTH: ' + val)
   state.width = val
@@ -146,6 +162,12 @@ function curve(val: number) {
   updateVolumes()
 }
 
+function lerp(val: number, min: number, max: number) {
+  const ret = Math.min(min, max) + (Math.abs(max - min) * val)
+  debug('VAL=' + val + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
+  return ret
+}
+
 function updateVolumes() {
   const halfW = state.width / 2.0
   const ballIncr = 360.0 / state.numChains
@@ -155,9 +177,13 @@ function updateVolumes() {
     if (delta > 180) {
       delta = 360 - delta
     }
-    const volume = Math.max(0, (1 - (delta / halfW)) * 0.85)
+    let volume = Math.max(1 - (delta / halfW), 0)
+
+    // min/max
+    volume = lerp(volume, state.minVol, state.maxVol)
+
     //debug('VOLUME: ' + volume)
-    outlet(OUTLET_VAL, [i + 1, volume])
+    outlet(OUTLET_VAL, [i + 1, volume * 0.85])
   }
 }
 

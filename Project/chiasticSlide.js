@@ -44,6 +44,8 @@ var state = {
     pos: 0,
     width: 90,
     curve: 0,
+    minVol: 0,
+    maxVol: 1,
     numChains: 0,
     colors: []
 };
@@ -52,7 +54,7 @@ function bang() {
     sendStatus('Initializing...');
     initialize();
 }
-var ARROW_LEN = 0.55;
+var ARROW_LEN = 0.50;
 var BALL_DIST = 0.75;
 var BALL_RADIUS = 0.15;
 function draw() {
@@ -84,7 +86,7 @@ function draw() {
     sketch.gllinewidth(2);
     var startDeg = adjustDeg(state.pos - halfW);
     var endDeg = adjustDeg(state.pos + halfW);
-    debug('START: ' + startDeg + ' END: ' + endDeg);
+    //debug('START: ' + startDeg + ' END: ' + endDeg)
     sketch.framecircle(ARROW_LEN, startDeg, endDeg);
     // position line
     sketch.glcolor(max.getcolor('live_lcd_title'));
@@ -104,6 +106,18 @@ function pos(val) {
     draw();
     updateVolumes();
 }
+function minVol(val) {
+    //debug('FLOAT: ' + val)
+    state.minVol = val / 100;
+    draw();
+    updateVolumes();
+}
+function maxVol(val) {
+    //debug('FLOAT: ' + val)
+    state.maxVol = val / 100;
+    draw();
+    updateVolumes();
+}
 function width(val) {
     //debug('WIDTH: ' + val)
     state.width = val;
@@ -115,6 +129,11 @@ function curve(val) {
     draw();
     updateVolumes();
 }
+function lerp(val, min, max) {
+    var ret = Math.min(min, max) + (Math.abs(max - min) * val);
+    debug('VAL=' + val + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret);
+    return ret;
+}
 function updateVolumes() {
     var halfW = state.width / 2.0;
     var ballIncr = 360.0 / state.numChains;
@@ -124,9 +143,11 @@ function updateVolumes() {
         if (delta > 180) {
             delta = 360 - delta;
         }
-        var volume = Math.max(0, (1 - (delta / halfW)) * 0.85);
+        var volume = Math.max(1 - (delta / halfW), 0);
+        // min/max
+        volume = lerp(volume, state.minVol, state.maxVol);
         //debug('VOLUME: ' + volume)
-        outlet(OUTLET_VAL, [i + 1, volume]);
+        outlet(OUTLET_VAL, [i + 1, volume * 0.85]);
     }
 }
 function sendStatus(str) {
