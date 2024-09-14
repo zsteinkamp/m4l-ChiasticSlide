@@ -41,14 +41,18 @@ function polarToXY(deg, len) {
 }
 debug('reloaded');
 var state = {
-    pos: 0,
-    width: 90,
-    curve: 1,
-    minVol: 0,
-    maxVol: 1,
-    numChains: 0,
+    children: [],
+    colorObjs: [],
     colors: [],
-    status: ""
+    curve: 1,
+    maxVol: 1,
+    minVol: 0,
+    numChains: 0,
+    parentObj: null,
+    pos: 0,
+    status: "",
+    type: "",
+    width: 90,
 };
 function bang() {
     //debug('INIT')
@@ -161,6 +165,19 @@ function updateVolumes() {
         outlet(OUTLET_VAL, [i + 1, volume * 0.85]);
     }
 }
+function trackColorCallback(slot, iargs) {
+    //debug('TRACK COLOR CALLBACK')
+    var args = arrayfromargs(iargs);
+    //debug('TRACKCOLOR', args)
+    if (args[0] === 'color') {
+        state.colors[slot] = args[1];
+        draw();
+    }
+}
+function getChainIdsOf(rackObj) {
+    //debug('NUMCHAINS: ' + prevDevice.get('chains').length)
+    return rackObj.get('chains').filter(function (e) { return e !== 'id'; });
+}
 function getRackDevicePaths(thisDevice, volumeDevicePaths) {
     var thisDevicePathTokens = thisDevice.unquotedpath.split(' ');
     var tokenLen = thisDevicePathTokens.length;
@@ -189,17 +206,64 @@ function getRackDevicePaths(thisDevice, volumeDevicePaths) {
         return;
     }
     //debug('NUMCHAINS: ' + prevDevice.get('chains').length)
-    var chainIds = prevDevice.get('chains').filter(function (e) { return e !== 'id'; });
-    //debug('CHAINIDS: ' + chainIds.join(', '))
-    for (var _i = 0, chainIds_1 = chainIds; _i < chainIds_1.length; _i++) {
-        var chainId = chainIds_1[_i];
-        var chainObj = new LiveAPI(function () { }, "id " + chainId);
-        var currChainPath = dequote(chainObj.path) + ' mixer_device volume';
+    state.parentObj = prevDevice;
+    var chainIds = getChainIdsOf(prevDevice);
+    state.children = chainIds;
+    var _loop_1 = function (i) {
+        var chainId = chainIds[i];
+        var chainObj = new LiveAPI(function (iargs) { return trackColorCallback(i, iargs); }, "id " + chainId);
+        chainObj.property = 'color';
+        currChainPath = dequote(chainObj.path) + ' mixer_device volume';
         //debug('CURR_CHAIN_PATH=' + currChainPath)
+        state.colorObjs.push(chainObj);
         state.colors.push(chainObj.get('color'));
         // jsui: initialize  PATHS: "" mixer_device volume, "live_set tracks 6 devices 0 chains 1" mixer_device volume, "live_set tracks 6 devices 0 chains 2" mixer_device volume   
         volumeDevicePaths.push(currChainPath);
+    };
+    var currChainPath;
+    //debug('CHAINIDS: ' + chainIds.join(', '))
+    for (var i = 0; i < chainIds.length; i++) {
+        _loop_1(i);
     }
+}
+function getChildTracksOf(parentTrack) {
+    var parentId = parentTrack.id.toString();
+    var api = new LiveAPI(function () { }, "live_set");
+    var trackCount = api.getcount('tracks');
+    //debug('TRACK COUNT: ' + trackCount)
+    var childIds = [];
+    for (var index = 0; index < trackCount; index++) {
+        api.path = 'live_set tracks ' + index;
+        // debug('GROUP TRACK: ' + api.get('group_track'))
+        if (parseInt(api.get('group_track')[1]) === parseInt(parentId)) {
+            childIds.push(api.id);
+            //debug('FOUND CHILD: ' + api.id + ' = ' + api.unquotedpath + ' mixer_device volume')
+        }
+    }
+    return childIds;
+}
+// called periodically to monitor changes in child tracks/chains
+function checkChildren() {
+    if (!state.parentObj) {
+        return;
+    }
+    var currChildren = null;
+    if (state.type === 'group') {
+        currChildren = getChildTracksOf(state.parentObj);
+    }
+    else if (state.type === 'rack') {
+        currChildren = getChainIdsOf(state.parentObj);
+    }
+    if (!currChildren) {
+        return;
+    }
+    if (state.children.length === currChildren.length && state.children.every(function (value, index) { return value === currChildren[index]; })) {
+        // no change, arrays are the same
+        return;
+    }
+    // change in group track population
+    //debug("Change in children detected; Initializing...")
+    initialize();
 }
 function getGroupTrackPaths(thisDevice, volumeDevicePaths) {
     //debug('GET GROUP TRACK PATHS')
@@ -208,32 +272,39 @@ function getGroupTrackPaths(thisDevice, volumeDevicePaths) {
     if (thisTrack.get('is_foldable')) {
         // THIS IS A GROUP TRACK
         //debug('GROUP TRACK')
-        var api = new LiveAPI(function () { }, "live_set");
-        var trackCount = api.getcount('tracks');
-        //debug('TRACK COUNT: ' + trackCount)
-        for (var index = 0; index < trackCount; index++) {
-            api.path = 'live_set tracks ' + index;
-            // debug('GROUP TRACK: ' + api.get('group_track'))
-            if (parseInt(api.get('group_track')[1]) === parseInt(thisTrack.id.toString())) {
-                volumeDevicePaths.push(api.unquotedpath + ' mixer_device volume');
-                state.colors.push(api.get('color'));
-                //debug('FOUND CHILD: ' + api.id + ' = ' + api.unquotedpath + ' mixer_device volume')
-            }
+        state.parentObj = thisTrack;
+        state.children = getChildTracksOf(thisTrack);
+        var _loop_2 = function (i) {
+            var childTrackId = state.children[i];
+            var childTrack = new LiveAPI(function (iargs) { return trackColorCallback(i, iargs); }, "id " + childTrackId);
+            //debug('GROUP TRACK: ' + childTrack.get('group_track'))
+            volumeDevicePaths.push(childTrack.unquotedpath + ' mixer_device volume');
+            state.colors.push(childTrack.get('color'));
+            childTrack.property = 'color';
+            state.colorObjs.push(childTrack);
+        };
+        //debug('CHILDREN: ' + state.children)
+        for (var i = 0; i < state.children.length; i++) {
+            _loop_2(i);
         }
     }
 }
 function initialize() {
     //debug('INITIALIZE')
     var thisDevice = new LiveAPI(function () { }, 'live_set this_device');
+    state.parentObj = null;
     state.numChains = 0;
     state.colors = [];
+    state.colorObjs = [];
     //debug('THIS DEVICE: ' + thisDevice.id)
     // populate volumeDevicePaths either from a rack device (instrument or effect)
     // or as the parent of a track group
     var volumeDevicePaths = [];
+    state.type = "rack";
     getRackDevicePaths(thisDevice, volumeDevicePaths);
     if (volumeDevicePaths.length === 0) {
         getGroupTrackPaths(thisDevice, volumeDevicePaths);
+        state.type = "group";
     }
     //debug('PATHS: ' + volumeDevicePaths.join(', '))
     // properly let go of devices for existing live.remote~ objects

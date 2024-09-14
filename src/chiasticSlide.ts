@@ -58,14 +58,18 @@ function polarToXY(deg: number, len: number) {
 debug('reloaded')
 
 var state = {
-  pos: 0,
-  width: 90,
-  curve: 1,
-  minVol: 0,
-  maxVol: 1,
-  numChains: 0,
+  children: [] as number[],
+  colorObjs: [] as LiveAPI[],
   colors: [] as number[],
-  status: ""
+  curve: 1,
+  maxVol: 1,
+  minVol: 0,
+  numChains: 0,
+  parentObj: null as LiveAPI,
+  pos: 0,
+  status: "",
+  type: "" as ("rack" | "group"),
+  width: 90,
 }
 
 function bang() {
@@ -200,6 +204,21 @@ function updateVolumes() {
   }
 }
 
+function trackColorCallback(slot: number, iargs: IArguments) {
+  //debug('TRACK COLOR CALLBACK')
+  const args = arrayfromargs(iargs)
+  //debug('TRACKCOLOR', args)
+  if (args[0] === 'color') {
+    state.colors[slot] = args[1]
+    draw()
+  }
+}
+
+function getChainIdsOf(rackObj: LiveAPI) {
+  //debug('NUMCHAINS: ' + prevDevice.get('chains').length)
+  return rackObj.get('chains').filter((e: any) => e !== 'id')
+}
+
 function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
   var thisDevicePathTokens = thisDevice.unquotedpath.split(' ')
   var tokenLen = thisDevicePathTokens.length
@@ -234,42 +253,91 @@ function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
   }
 
   //debug('NUMCHAINS: ' + prevDevice.get('chains').length)
-  const chainIds = prevDevice.get('chains').filter((e: any) => e !== 'id')
+  state.parentObj = prevDevice
+  const chainIds = getChainIdsOf(prevDevice)
+  state.children = chainIds
 
   //debug('CHAINIDS: ' + chainIds.join(', '))
 
-  for (const chainId of chainIds) {
-    const chainObj = new LiveAPI(() => { }, "id " + chainId)
+  for (let i = 0; i < chainIds.length; i++) {
+    const chainId = chainIds[i]
+    const chainObj = new LiveAPI((iargs: IArguments) => trackColorCallback(i, iargs), "id " + chainId)
+    chainObj.property = 'color'
     var currChainPath =
       dequote(chainObj.path) + ' mixer_device volume'
     //debug('CURR_CHAIN_PATH=' + currChainPath)
 
+    state.colorObjs.push(chainObj)
     state.colors.push(chainObj.get('color'))
     // jsui: initialize  PATHS: "" mixer_device volume, "live_set tracks 6 devices 0 chains 1" mixer_device volume, "live_set tracks 6 devices 0 chains 2" mixer_device volume   
-
     volumeDevicePaths.push(currChainPath)
   }
 }
 
+function getChildTracksOf(parentTrack: LiveAPI) {
+  const parentId = parentTrack.id.toString()
+  const api = new LiveAPI(() => { }, "live_set")
+  const trackCount = api.getcount('tracks')
+  //debug('TRACK COUNT: ' + trackCount)
+  const childIds: number[] = []
+
+  for (var index = 0; index < trackCount; index++) {
+    api.path = 'live_set tracks ' + index
+    // debug('GROUP TRACK: ' + api.get('group_track'))
+    if (parseInt(api.get('group_track')[1]) === parseInt(parentId)) {
+      childIds.push(api.id)
+      //debug('FOUND CHILD: ' + api.id + ' = ' + api.unquotedpath + ' mixer_device volume')
+    }
+  }
+
+  return childIds
+}
+
+// called periodically to monitor changes in child tracks/chains
+function checkChildren() {
+  if (!state.parentObj) {
+    return
+  }
+  let currChildren = null as number[]
+
+  if (state.type === 'group') {
+    currChildren = getChildTracksOf(state.parentObj)
+  } else if (state.type === 'rack') {
+    currChildren = getChainIdsOf(state.parentObj)
+  }
+  if (!currChildren) {
+    return
+  }
+  if (state.children.length === currChildren.length && state.children.every(function (value, index) { return value === currChildren[index] })) {
+    // no change, arrays are the same
+    return
+  }
+  // change in group track population
+  //debug("Change in children detected; Initializing...")
+  initialize()
+}
+
+
 function getGroupTrackPaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
   //debug('GET GROUP TRACK PATHS')
-  var thisTrack = new LiveAPI(() => { }, thisDevice.get('canonical_parent'))
+  const thisTrack = new LiveAPI(() => { }, thisDevice.get('canonical_parent'))
+
   //debug('THIS TRACK: ' + thisTrack.id + ' ' + thisTrack.get("name"))
   if (thisTrack.get('is_foldable')) {
     // THIS IS A GROUP TRACK
     //debug('GROUP TRACK')
-    var api = new LiveAPI(() => { }, "live_set")
-    var trackCount = api.getcount('tracks')
-    //debug('TRACK COUNT: ' + trackCount)
-
-    for (var index = 0; index < trackCount; index++) {
-      api.path = 'live_set tracks ' + index
-      // debug('GROUP TRACK: ' + api.get('group_track'))
-      if (parseInt(api.get('group_track')[1]) === parseInt(thisTrack.id.toString())) {
-        volumeDevicePaths.push(api.unquotedpath + ' mixer_device volume')
-        state.colors.push(api.get('color'))
-        //debug('FOUND CHILD: ' + api.id + ' = ' + api.unquotedpath + ' mixer_device volume')
-      }
+    state.parentObj = thisTrack
+    state.children = getChildTracksOf(thisTrack)
+    //debug('CHILDREN: ' + state.children)
+    for (let i = 0; i < state.children.length; i++) {
+      const childTrackId = state.children[i]
+      const childTrack = new LiveAPI((iargs: IArguments) => trackColorCallback(i, iargs), "id " + childTrackId)
+      //debug('GROUP TRACK: ' + childTrack.get('group_track'))
+      volumeDevicePaths.push(childTrack.unquotedpath + ' mixer_device volume')
+      state.colors.push(childTrack.get('color'))
+      childTrack.property = 'color'
+      state.colorObjs.push(childTrack)
+      //debug('FOUND CHILD: ' + api.id + ' = ' + api.unquotedpath + ' mixer_device volume')
     }
   }
 }
@@ -277,16 +345,20 @@ function getGroupTrackPaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
 function initialize() {
   //debug('INITIALIZE')
   var thisDevice = new LiveAPI(() => { }, 'live_set this_device')
+  state.parentObj = null
   state.numChains = 0
   state.colors = []
+  state.colorObjs = []
   //debug('THIS DEVICE: ' + thisDevice.id)
 
   // populate volumeDevicePaths either from a rack device (instrument or effect)
   // or as the parent of a track group
   var volumeDevicePaths: string[] = []
+  state.type = "rack"
   getRackDevicePaths(thisDevice, volumeDevicePaths)
   if (volumeDevicePaths.length === 0) {
     getGroupTrackPaths(thisDevice, volumeDevicePaths)
+    state.type = "group"
   }
 
   //debug('PATHS: ' + volumeDevicePaths.join(', '))
