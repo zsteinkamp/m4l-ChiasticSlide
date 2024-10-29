@@ -20,6 +20,7 @@ If you're interested in this, then you may also be interested in my other device
 
 ## Changelog
 
+- 2024-10-29 [v6](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v6/ChiasticSlide-v6.amxd) - Add non-blocking telemetry ping on load. Does not send any identifying information, only the plugin name, the local computer name, type of computer, and CPU type. I just want to see which plugins are used the most.
 - 2024-09-13 [v5](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v5/ChiasticSlide-v5.amxd) - Track changes in track/chain colors and children adding/removing/reordering.
 - 2024-09-10 [v4](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v4/ChiasticSlide.v4.amxd) - Re-imagine UI as a circle, add a Curve control.
 - 2024-04-27 [v3](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v3/ChiasticSlide.v3.amxd) - Support group tracks. Provide a visual for volumes.
