@@ -2,9 +2,12 @@ autowatch = 1
 inlets = 1
 outlets = 2
 
-sketch.default2d();
-sketch.glloadidentity();
-sketch.glortho(-1, 1, -1, 1, -1, 1);
+//sketch.default2d();
+//sketch.glloadidentity();
+//sketch.glortho(-1, 1, -1, 1, -1, 1);
+
+mgraphics.init()
+mgraphics.relative_coords = 1
 
 //const debugLog = true
 const debugLog = false
@@ -78,6 +81,56 @@ const BALL_DIST = 0.75
 const BALL_RADIUS = 0.15
 
 function draw() {
+  mgraphics.redraw()
+}
+
+const CANVAS_W = 169
+const CANVAS_H = 169
+
+function deg2rad(deg: number) {
+  return deg * Math.PI / 180
+}
+
+function paint() {
+  // background
+  mgraphics.set_source_rgb(max.getcolor('live_lcd_bg'))
+  mgraphics.rectangle(-1.0, 1, 2, 2);
+  mgraphics.fill();
+
+  // width arc
+  const DIAL_WIDTH = 0.8
+  const adjPos = (270 + state.pos) % 360
+  const halfW = state.width / 2.0
+  const startRad = deg2rad(adjPos - halfW)
+  const startHRad = deg2rad(adjPos - halfW - 90)
+  const endRad = deg2rad(adjPos + halfW)
+  const endHRad = deg2rad(adjPos + halfW + 90)
+
+  mgraphics.set_source_rgb(max.getcolor('live_control_selection'))
+  mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad)
+  const startX = DIAL_WIDTH * Math.cos(startRad)
+  const startY = DIAL_WIDTH * Math.sin(-startRad)
+  const endX = DIAL_WIDTH * Math.cos(endRad)
+  const endY = DIAL_WIDTH * Math.sin(-endRad)
+
+  const posRad = deg2rad(adjPos)
+  const posX = state.curve * Math.cos(posRad)
+  const posY = state.curve * Math.sin(-posRad)
+
+  const startHX = startX - (state.curve * Math.cos(startHRad))
+  const startHY = startY - (state.curve * Math.sin(-startHRad))
+
+  const endHX = endX - (state.curve * Math.cos(endHRad))
+  const endHY = endY - (state.curve * Math.sin(-endHRad))
+
+  //mgraphics.line_to(0, 0)
+  //mgraphics.line_to(startX, startY)
+  mgraphics.curve_to(endHX, endHY, posX, posY, 0, 0)
+  mgraphics.curve_to(posX, posY, startHX, startHY, startX, startY)
+  mgraphics.fill();
+}
+
+function sketchDraw() {
   sketch.glclearcolor(max.getcolor('live_lcd_bg'))
   sketch.glclear();
 
@@ -93,17 +146,31 @@ function draw() {
   const halfW = state.width / 2.0
   sketch.moveto(0, 0, 0)
   const arcColor = max.getcolor('live_control_selection')
-  arcColor[3] = 0.1 / state.curve
+  //arcColor[3] = 0.1 / state.curve
   sketch.glcolor(arcColor)
   let startDeg = adjustDeg(state.pos - halfW)
   let endDeg = adjustDeg(state.pos + halfW)
   sketch.circle(ARROW_LEN, startDeg, endDeg)
 
+  sketch.glcolor(max.getcolor('live_lcd_bg'))
+  const startRad = (-startDeg + 90) * (Math.PI / 180)
+  const endRad = (-endDeg + 90) * (Math.PI / 180)
+  // first ellipse
+  sketch.moveto(ARROW_LEN * 0.5 * Math.sin(startRad), ARROW_LEN * 0.5 * Math.cos(startRad), 0)
+  sketch.shapeorient(0, 0, startDeg)
+  sketch.ellipse(ARROW_LEN / 2.0, ARROW_LEN * (state.curve / 20), 180, 360)
+  // second ellipse
+  sketch.moveto(ARROW_LEN * 0.5 * Math.sin(endRad), ARROW_LEN * 0.5 * Math.cos(endRad), 0)
+  sketch.shapeorient(0, 0, endDeg)
+  sketch.ellipse(ARROW_LEN / 2.0, ARROW_LEN * (state.curve / 20), 0, 180)
+  // reset rotation
+  sketch.shapeorient(0, 0, 0)
+
   // position line
-  sketch.glcolor(max.getcolor('live_lcd_title'))
+  sketch.glcolor(max.getcolor('live_control_selection'))
   sketch.moveto(0, 0, 0)
   pos = polarToXY(state.pos, ARROW_LEN)
-  sketch.gllinewidth(2)
+  sketch.gllinewidth(1)
   sketch.line(pos.x, pos.y, 0)
 
   // center circle
