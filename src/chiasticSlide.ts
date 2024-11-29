@@ -38,11 +38,6 @@ function parseColor(colorNum: number) {
   }
 }
 
-function dequote(str: string) {
-  //debug(str, typeof str)
-  return str.toString().replace(/^"|"$/g, '')
-}
-
 function adjustDeg(deg: number) {
   return 450 - deg
 }
@@ -57,7 +52,7 @@ function polarToXY(deg: number, len: number) {
 
 debug('reloaded')
 
-var state = {
+const state = {
   children: [] as number[],
   colorObjs: [] as LiveAPI[],
   colors: [] as number[],
@@ -263,8 +258,7 @@ function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
     const chainId = chainIds[i]
     const chainObj = new LiveAPI((iargs: IArguments) => trackColorCallback(i, iargs), "id " + chainId)
     chainObj.property = 'color'
-    var currChainPath =
-      dequote(chainObj.path) + ' mixer_device volume'
+    var currChainPath = chainObj.unquotedpath + ' mixer_device volume'
     //debug('CURR_CHAIN_PATH=' + currChainPath)
 
     state.colorObjs.push(chainObj)

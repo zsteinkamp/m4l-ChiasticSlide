@@ -25,10 +25,6 @@ function parseColor(colorNum) {
         b: (colorNum & 255) / 255.0,
     };
 }
-function dequote(str) {
-    //debug(str, typeof str)
-    return str.toString().replace(/^"|"$/g, '');
-}
 function adjustDeg(deg) {
     return 450 - deg;
 }
@@ -213,7 +209,7 @@ function getRackDevicePaths(thisDevice, volumeDevicePaths) {
         var chainId = chainIds[i];
         var chainObj = new LiveAPI(function (iargs) { return trackColorCallback(i, iargs); }, "id " + chainId);
         chainObj.property = 'color';
-        currChainPath = dequote(chainObj.path) + ' mixer_device volume';
+        currChainPath = chainObj.unquotedpath + ' mixer_device volume';
         //debug('CURR_CHAIN_PATH=' + currChainPath)
         state.colorObjs.push(chainObj);
         state.colors.push(chainObj.get('color'));
