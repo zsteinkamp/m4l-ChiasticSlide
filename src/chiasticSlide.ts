@@ -102,8 +102,9 @@ function paint() {
   const adjPos = (270 + state.pos) % 360
   const halfW = state.width / 2.0
   const startRad = deg2rad(adjPos - halfW)
-  const startHRad = deg2rad(adjPos - halfW - 90)
   const endRad = deg2rad(adjPos + halfW)
+
+  const startHRad = deg2rad(adjPos - halfW - 90)
   const endHRad = deg2rad(adjPos + halfW + 90)
 
   mgraphics.set_source_rgb(max.getcolor('live_control_selection'))
@@ -117,16 +118,24 @@ function paint() {
   const posX = state.curve * Math.cos(posRad)
   const posY = state.curve * Math.sin(-posRad)
 
-  const startHX = startX - (state.curve * Math.cos(startHRad))
-  const startHY = startY - (state.curve * Math.sin(-startHRad))
+  const startHX = startX - (DIAL_WIDTH * state.curve * Math.cos(startHRad))
+  const startHY = startY - (DIAL_WIDTH * state.curve * Math.sin(-startHRad))
 
-  const endHX = endX - (state.curve * Math.cos(endHRad))
-  const endHY = endY - (state.curve * Math.sin(-endHRad))
+  const endHX = endX - (DIAL_WIDTH * state.curve * Math.cos(endHRad))
+  const endHY = endY - (DIAL_WIDTH * state.curve * Math.sin(-endHRad))
 
   //mgraphics.line_to(0, 0)
   //mgraphics.line_to(startX, startY)
   mgraphics.curve_to(endHX, endHY, posX, posY, 0, 0)
   mgraphics.curve_to(posX, posY, startHX, startHY, startX, startY)
+  mgraphics.fill();
+
+  mgraphics.set_source_rgb(max.getcolor('live_lcd_frame'))
+  mgraphics.arc(posX, posY, 0.1, 0, 2 * Math.PI)
+  mgraphics.fill();
+  mgraphics.arc(startHX, startHY, 0.1, 0, 2 * Math.PI)
+  mgraphics.fill();
+  mgraphics.arc(endHX, endHY, 0.1, 0, 2 * Math.PI)
   mgraphics.fill();
 }
 

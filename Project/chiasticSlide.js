@@ -78,8 +78,8 @@ function paint() {
     var adjPos = (270 + state.pos) % 360;
     var halfW = state.width / 2.0;
     var startRad = deg2rad(adjPos - halfW);
-    var startHRad = deg2rad(adjPos - halfW - 90);
     var endRad = deg2rad(adjPos + halfW);
+    var startHRad = deg2rad(adjPos - halfW - 90);
     var endHRad = deg2rad(adjPos + halfW + 90);
     mgraphics.set_source_rgb(max.getcolor('live_control_selection'));
     mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad);
@@ -90,14 +90,21 @@ function paint() {
     var posRad = deg2rad(adjPos);
     var posX = state.curve * Math.cos(posRad);
     var posY = state.curve * Math.sin(-posRad);
-    var startHX = startX - (state.curve * Math.cos(startHRad));
-    var startHY = startY - (state.curve * Math.sin(-startHRad));
-    var endHX = endX - (state.curve * Math.cos(endHRad));
-    var endHY = endY - (state.curve * Math.sin(-endHRad));
+    var startHX = startX - (DIAL_WIDTH * state.curve * Math.cos(startHRad));
+    var startHY = startY - (DIAL_WIDTH * state.curve * Math.sin(-startHRad));
+    var endHX = endX - (DIAL_WIDTH * state.curve * Math.cos(endHRad));
+    var endHY = endY - (DIAL_WIDTH * state.curve * Math.sin(-endHRad));
     //mgraphics.line_to(0, 0)
     //mgraphics.line_to(startX, startY)
     mgraphics.curve_to(endHX, endHY, posX, posY, 0, 0);
     mgraphics.curve_to(posX, posY, startHX, startHY, startX, startY);
+    mgraphics.fill();
+    mgraphics.set_source_rgb(max.getcolor('live_lcd_frame'));
+    mgraphics.arc(posX, posY, 0.1, 0, 2 * Math.PI);
+    mgraphics.fill();
+    mgraphics.arc(startHX, startHY, 0.1, 0, 2 * Math.PI);
+    mgraphics.fill();
+    mgraphics.arc(endHX, endHY, 0.1, 0, 2 * Math.PI);
     mgraphics.fill();
 }
 function sketchDraw() {
