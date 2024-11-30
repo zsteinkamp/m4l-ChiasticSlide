@@ -44,6 +44,13 @@ Add this device to a Group Track or immediately after an Instrument Rack or Audi
 
 `Rescan` - Click this if you add, remove, or change the color of  tracks/chains.
 
+## Constant Power
+
+If you are looking to perfectly fade betweeen some number of sources, with constant volume regardless of `Direction` setting, then consider the following.
+
+1) Set the `Width` to 2 * (360 / N), where N is the number of sources. So for 6 sources, set the width to 120. For 4 sources, set to 180, etc.
+2) Set the `Curve` value to 0.32. If you are using the experimental, unreleased Constant Power option, then set `Curve` to 0.64.
+
 ## TODO
 - ...
 

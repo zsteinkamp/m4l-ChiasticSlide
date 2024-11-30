@@ -1,9 +1,6 @@
 autowatch = 1;
 inlets = 1;
 outlets = 2;
-//sketch.default2d();
-//sketch.glloadidentity();
-//sketch.glortho(-1, 1, -1, 1, -1, 1);
 mgraphics.init();
 mgraphics.relative_coords = 1;
 var debugLog = true;
