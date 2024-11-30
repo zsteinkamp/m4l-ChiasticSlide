@@ -59,6 +59,7 @@ const state = {
   children: [] as number[],
   colorObjs: [] as LiveAPI[],
   colors: [] as number[],
+  constantPower: 0,
   curve: 1,
   maxVol: 1,
   minVol: 0,
@@ -192,6 +193,12 @@ function width(val: number) {
   updateVolumes()
 }
 
+function constantPower(val: number) {
+  state.constantPower = val
+  draw()
+  updateVolumes()
+}
+
 function curve(val: number) {
   state.curve = val
   draw()
@@ -212,7 +219,13 @@ function calcVolumeAt(inPos: number) {
   }
   let volume = Math.max(1 - (delta / halfW), 0)
 
-  return lerp(volume, state.minVol, state.maxVol, state.curve)
+  volume = lerp(volume, state.minVol, state.maxVol, state.curve)
+  // constant power volume adjustment
+  if (state.constantPower) {
+    volume = Math.sin(volume * Math.PI / 2)
+  }
+
+  return volume
 }
 
 function updateVolumes() {

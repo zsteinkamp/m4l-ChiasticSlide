@@ -42,6 +42,7 @@ var state = {
     children: [],
     colorObjs: [],
     colors: [],
+    constantPower: 0,
     curve: 1,
     maxVol: 1,
     minVol: 0,
@@ -156,6 +157,11 @@ function width(val) {
     draw();
     updateVolumes();
 }
+function constantPower(val) {
+    state.constantPower = val;
+    draw();
+    updateVolumes();
+}
 function curve(val) {
     state.curve = val;
     draw();
@@ -173,7 +179,12 @@ function calcVolumeAt(inPos) {
         delta = 360 - delta;
     }
     var volume = Math.max(1 - (delta / halfW), 0);
-    return lerp(volume, state.minVol, state.maxVol, state.curve);
+    volume = lerp(volume, state.minVol, state.maxVol, state.curve);
+    // constant power volume adjustment
+    if (state.constantPower) {
+        volume = Math.sin(volume * Math.PI / 2);
+    }
+    return volume;
 }
 function updateVolumes() {
     var halfW = state.width / 2.0;
