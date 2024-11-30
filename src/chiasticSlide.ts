@@ -108,6 +108,11 @@ function paint() {
   mgraphics.arc(adjX, adjY, NUBBIN_DIA, 0, TAU)
   mgraphics.fill()
 
+  // outer arc
+  mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg_alt'))
+  mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad)
+  mgraphics.stroke()
+
   // width arc
   mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg'))
   mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad)
