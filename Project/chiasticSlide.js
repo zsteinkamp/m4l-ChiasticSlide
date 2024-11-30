@@ -6,8 +6,8 @@ outlets = 2;
 //sketch.glortho(-1, 1, -1, 1, -1, 1);
 mgraphics.init();
 mgraphics.relative_coords = 1;
-//const debugLog = true
-var debugLog = false;
+var debugLog = true;
+//const debugLog = false
 setinletassist(0, '<Bang> to initialize, <Float> to fade.');
 var MAX_PARAMS = 32;
 var OUTLET_VAL = 0;
@@ -57,14 +57,12 @@ function bang() {
     setStatus('Initializing...');
     initialize();
 }
-var ARROW_LEN = 0.75;
-var BALL_DIST = 0.75;
-var BALL_RADIUS = 0.15;
 function draw() {
     mgraphics.redraw();
 }
 var CANVAS_W = 169;
 var CANVAS_H = 169;
+var TAU = 2 * Math.PI;
 function deg2rad(deg) {
     return deg * Math.PI / 180;
 }
@@ -73,101 +71,62 @@ function paint() {
     mgraphics.set_source_rgb(max.getcolor('live_lcd_bg'));
     mgraphics.rectangle(-1.0, 1, 2, 2);
     mgraphics.fill();
-    // width arc
-    var DIAL_WIDTH = 0.8;
-    var adjPos = (270 + state.pos) % 360;
+    var DIAL_WIDTH = 0.75;
     var halfW = state.width / 2.0;
-    var startRad = deg2rad(adjPos - halfW);
-    var endRad = deg2rad(adjPos + halfW);
-    var startHRad = deg2rad(adjPos - halfW - 90);
-    var endHRad = deg2rad(adjPos + halfW + 90);
-    mgraphics.set_source_rgb(max.getcolor('live_control_selection'));
+    var adjPos = (270 + state.pos) % 360;
+    var adjRad = deg2rad(adjPos);
+    var startPos = adjPos - halfW;
+    var endPos = adjPos + halfW;
+    var startRad = deg2rad(startPos);
+    var endRad = deg2rad(endPos);
+    // nubbin
+    var NUBBIN_DIA = 0.15;
+    mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg_alt'));
+    var adjX = 0.85 * DIAL_WIDTH * Math.cos(adjRad);
+    var adjY = 0.85 * DIAL_WIDTH * Math.sin(-adjRad);
+    mgraphics.arc(adjX, adjY, NUBBIN_DIA, 0, TAU);
+    mgraphics.fill();
+    // width arc
+    mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg'));
     mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad);
+    var sampleStartPos = state.pos - halfW;
+    var sampleEndPos = state.pos + halfW;
+    var distance = Math.abs(sampleStartPos - sampleEndPos);
+    var STEPS = 80;
+    for (var samplePos = sampleEndPos; samplePos >= sampleStartPos; samplePos -= distance / STEPS) {
+        var sampleRad = deg2rad((270 + samplePos) % 360); // need to adjust for plotted points
+        var volume = calcVolumeAt(samplePos); // un-adjusted for volume calc
+        //debug('VOLUME: ' + volume + ' POS: ' + samplePos)
+        var sampleX = DIAL_WIDTH * (1 - volume) * Math.cos(sampleRad);
+        var sampleY = DIAL_WIDTH * (1 - volume) * Math.sin(-sampleRad);
+        mgraphics.line_to(sampleX, sampleY);
+    }
     var startX = DIAL_WIDTH * Math.cos(startRad);
     var startY = DIAL_WIDTH * Math.sin(-startRad);
-    var endX = DIAL_WIDTH * Math.cos(endRad);
-    var endY = DIAL_WIDTH * Math.sin(-endRad);
-    var posRad = deg2rad(adjPos);
-    var posX = state.curve * Math.cos(posRad);
-    var posY = state.curve * Math.sin(-posRad);
-    var startHX = startX - (DIAL_WIDTH * state.curve * Math.cos(startHRad));
-    var startHY = startY - (DIAL_WIDTH * state.curve * Math.sin(-startHRad));
-    var endHX = endX - (DIAL_WIDTH * state.curve * Math.cos(endHRad));
-    var endHY = endY - (DIAL_WIDTH * state.curve * Math.sin(-endHRad));
-    //mgraphics.line_to(0, 0)
-    //mgraphics.line_to(startX, startY)
-    mgraphics.curve_to(endHX, endHY, posX, posY, 0, 0);
-    mgraphics.curve_to(posX, posY, startHX, startHY, startX, startY);
+    mgraphics.line_to(startX, startY);
     mgraphics.fill();
-    mgraphics.set_source_rgb(max.getcolor('live_lcd_frame'));
-    mgraphics.arc(posX, posY, 0.1, 0, 2 * Math.PI);
-    mgraphics.fill();
-    mgraphics.arc(startHX, startHY, 0.1, 0, 2 * Math.PI);
-    mgraphics.fill();
-    mgraphics.arc(endHX, endHY, 0.1, 0, 2 * Math.PI);
-    mgraphics.fill();
-}
-function sketchDraw() {
-    sketch.glclearcolor(max.getcolor('live_lcd_bg'));
-    sketch.glclear();
-    var pos = { x: 0, y: 0 };
-    // background circle
-    //sketch.moveto(0, 0, 0)
-    //sketch.glcolor(max.getcolor('live_lcd_frame'))
-    //sketch.gllinewidth(10)
-    //sketch.circle(BALL_DIST, 0, 360)
-    // width arc
-    var halfW = state.width / 2.0;
-    sketch.moveto(0, 0, 0);
-    var arcColor = max.getcolor('live_control_selection');
-    //arcColor[3] = 0.1 / state.curve
-    sketch.glcolor(arcColor);
-    var startDeg = adjustDeg(state.pos - halfW);
-    var endDeg = adjustDeg(state.pos + halfW);
-    sketch.circle(ARROW_LEN, startDeg, endDeg);
-    sketch.glcolor(max.getcolor('live_lcd_bg'));
-    var startRad = (-startDeg + 90) * (Math.PI / 180);
-    var endRad = (-endDeg + 90) * (Math.PI / 180);
-    // first ellipse
-    sketch.moveto(ARROW_LEN * 0.5 * Math.sin(startRad), ARROW_LEN * 0.5 * Math.cos(startRad), 0);
-    sketch.shapeorient(0, 0, startDeg);
-    sketch.ellipse(ARROW_LEN / 2.0, ARROW_LEN * (state.curve / 20), 180, 360);
-    // second ellipse
-    sketch.moveto(ARROW_LEN * 0.5 * Math.sin(endRad), ARROW_LEN * 0.5 * Math.cos(endRad), 0);
-    sketch.shapeorient(0, 0, endDeg);
-    sketch.ellipse(ARROW_LEN / 2.0, ARROW_LEN * (state.curve / 20), 0, 180);
-    // reset rotation
-    sketch.shapeorient(0, 0, 0);
-    // position line
-    sketch.glcolor(max.getcolor('live_control_selection'));
-    sketch.moveto(0, 0, 0);
-    pos = polarToXY(state.pos, ARROW_LEN);
-    sketch.gllinewidth(1);
-    sketch.line(pos.x, pos.y, 0);
     // center circle
-    sketch.moveto(0, 0, 0);
-    sketch.glcolor(max.getcolor('live_lcd_frame'));
-    sketch.circle(0.1, 0, 360);
+    mgraphics.set_source_rgb(max.getcolor('live_lcd_frame'));
+    mgraphics.arc(0, 0, 0.1, 0, TAU);
+    mgraphics.fill();
     // balls
-    //debug('DRAW BALLS')
-    //debug('COLORS: ' + state.colors.join(', '))
+    var BALL_DIST = 0.8;
+    var BALL_RADIUS = 0.15;
     var ballIncr = 360.0 / state.numChains;
     for (var i = 0; i < state.numChains; i++) {
         //debug('BALL ' + i + ': ' + ballIncr * i)
         var color = parseColor(state.colors[i]);
         //debug('COLOR: ' + JSON.stringify(color))
-        sketch.glcolor(color.r, color.g, color.b, 1);
-        pos = polarToXY(ballIncr * i, BALL_DIST);
-        sketch.moveto(pos.x, pos.y, 0);
-        sketch.circle(BALL_RADIUS, 0, 360);
+        mgraphics.set_source_rgb(color.r, color.g, color.b);
+        var pos_1 = polarToXY(ballIncr * i, BALL_DIST);
+        mgraphics.arc(pos_1.x, pos_1.y, BALL_RADIUS, 0, TAU);
+        mgraphics.fill();
     }
-    // status
-    sketch.moveto(0, -0.95, 0);
-    sketch.fontsize(8);
-    sketch.textalign("center", "bottom");
-    sketch.glcolor(max.getcolor('live_lcd_title'));
-    sketch.text(state.status);
-    refresh();
+    mgraphics.set_source_rgb(max.getcolor('live_lcd_title'));
+    mgraphics.move_to(-0.95, -0.95);
+    mgraphics.set_font_size(8);
+    mgraphics.text_path(state.status);
+    mgraphics.fill();
 }
 function setStatus(status) {
     state.status = status;
@@ -207,18 +166,21 @@ function lerp(val, min, max, curve) {
     //debug('VAL=' + val + ' CURVE=' + curve + ' VALC=' + (val ** curve) + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
     return ret;
 }
+function calcVolumeAt(inPos) {
+    var halfW = state.width / 2.0;
+    var delta = Math.abs(state.pos - inPos);
+    if (delta > 180) {
+        delta = 360 - delta;
+    }
+    var volume = Math.max(1 - (delta / halfW), 0);
+    return lerp(volume, state.minVol, state.maxVol, state.curve);
+}
 function updateVolumes() {
     var halfW = state.width / 2.0;
     var ballIncr = 360.0 / state.numChains;
     for (var i = 0; i < state.numChains; i++) {
         var ballPos = ballIncr * i;
-        var delta = Math.abs(state.pos - ballPos);
-        if (delta > 180) {
-            delta = 360 - delta;
-        }
-        var volume = Math.max(1 - (delta / halfW), 0);
-        // min/max
-        volume = lerp(volume, state.minVol, state.maxVol, state.curve);
+        var volume = calcVolumeAt(ballPos);
         //debug('VOLUME: ' + volume)
         outlet(OUTLET_VAL, [i + 1, volume * 0.85]);
     }
