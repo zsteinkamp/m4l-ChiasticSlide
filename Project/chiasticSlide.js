@@ -71,7 +71,7 @@ function paint() {
     mgraphics.set_source_rgb(max.getcolor('live_lcd_bg'));
     mgraphics.rectangle(-1.0, 1, 2, 2);
     mgraphics.fill();
-    var DIAL_WIDTH = 0.75;
+    var DIAL_WIDTH = 0.65;
     var halfW = state.width / 2.0;
     var adjPos = (270 + state.pos) % 360;
     var adjRad = deg2rad(adjPos);
@@ -110,8 +110,8 @@ function paint() {
     mgraphics.arc(0, 0, 0.1, 0, TAU);
     mgraphics.fill();
     // balls
-    var BALL_DIST = 0.8;
-    var BALL_RADIUS = 0.15;
+    var BALL_DIST = 0.85;
+    var BALL_RADIUS = 0.10;
     var ballIncr = 360.0 / state.numChains;
     for (var i = 0; i < state.numChains; i++) {
         //debug('BALL ' + i + ': ' + ballIncr * i)

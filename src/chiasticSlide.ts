@@ -94,7 +94,7 @@ function paint() {
   mgraphics.rectangle(-1.0, 1, 2, 2);
   mgraphics.fill();
 
-  const DIAL_WIDTH = 0.75
+  const DIAL_WIDTH = 0.65
   const halfW = state.width / 2.0
   const adjPos = (270 + state.pos) % 360
   const adjRad = deg2rad(adjPos)
@@ -139,8 +139,8 @@ function paint() {
   mgraphics.fill();
 
   // balls
-  const BALL_DIST = 0.8
-  const BALL_RADIUS = 0.15
+  const BALL_DIST = 0.85
+  const BALL_RADIUS = 0.10
   const ballIncr = 360.0 / state.numChains
   for (let i = 0; i < state.numChains; i++) {
     //debug('BALL ' + i + ': ' + ballIncr * i)
