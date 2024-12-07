@@ -2,11 +2,13 @@ autowatch = 1
 inlets = 1
 outlets = 2
 
+import { logFactory } from './utils'
+
 mgraphics.init()
 mgraphics.relative_coords = 1
 
 const debugLog = true
-//const debugLog = false
+const log = logFactory({ outputLogs: debugLog })
 
 setinletassist(0, '<Bang> to initialize, <Float> to fade.')
 const MAX_PARAMS = 32
@@ -17,16 +19,6 @@ setoutletassist(
   OUTLET_IDS,
   '<chain idx, id, param_id> messages to map live.remote to device id param_id.'
 )
-
-function debug(_: any) {
-  if (debugLog) {
-    post(
-      debug.caller ? debug.caller.name : 'ROOT',
-      Array.prototype.slice.call(arguments).join(' '),
-      '\n'
-    )
-  }
-}
 
 function parseColor(colorNum: number) {
   // jsui: draw  COLORS: 16725558, 10208397, 16725558   
@@ -49,7 +41,7 @@ function polarToXY(deg: number, len: number) {
   return ret
 }
 
-debug('reloaded')
+log('reloaded')
 
 const state = {
   children: [] as number[],
@@ -68,7 +60,7 @@ const state = {
 }
 
 function bang() {
-  //debug('INIT')
+  //log('INIT')
   setStatus('Initializing...')
   initialize()
 }
@@ -125,7 +117,7 @@ function paint() {
   for (let samplePos = sampleEndPos; samplePos >= sampleStartPos; samplePos -= distance / STEPS) {
     const sampleRad = deg2rad((270 + samplePos) % 360) // need to adjust for plotted points
     const volume = calcVolumeAt(samplePos) // un-adjusted for volume calc
-    //debug('VOLUME: ' + volume + ' POS: ' + samplePos)
+    //log('VOLUME: ' + volume + ' POS: ' + samplePos)
     const sampleX = DIAL_WIDTH * (1 - volume) * Math.cos(sampleRad)
     const sampleY = DIAL_WIDTH * (1 - volume) * Math.sin(-sampleRad)
     mgraphics.line_to(sampleX, sampleY)
@@ -145,9 +137,9 @@ function paint() {
   const BALL_RADIUS = 0.10
   const ballIncr = 360.0 / state.numChains
   for (let i = 0; i < state.numChains; i++) {
-    //debug('BALL ' + i + ': ' + ballIncr * i)
+    //log('BALL ' + i + ': ' + ballIncr * i)
     const color = parseColor(state.colors[i])
-    //debug('COLOR: ' + JSON.stringify(color))
+    //log('COLOR: ' + JSON.stringify(color))
     mgraphics.set_source_rgb(color.r, color.g, color.b)
     const pos = polarToXY(ballIncr * i, BALL_DIST)
     mgraphics.arc(pos.x, pos.y, BALL_RADIUS, 0, TAU)
@@ -167,28 +159,28 @@ function setStatus(status: string) {
 }
 
 function pos(val: number) {
-  //debug('FLOAT: ' + val)
+  //log('FLOAT: ' + val)
   state.pos = val
   draw()
   updateVolumes()
 }
 
 function minVol(val: number) {
-  //debug('FLOAT: ' + val)
+  //log('FLOAT: ' + val)
   state.minVol = val / 100
   draw()
   updateVolumes()
 }
 
 function maxVol(val: number) {
-  //debug('FLOAT: ' + val)
+  //log('FLOAT: ' + val)
   state.maxVol = val / 100
   draw()
   updateVolumes()
 }
 
 function width(val: number) {
-  //debug('WIDTH: ' + val)
+  //log('WIDTH: ' + val)
   state.width = val
   draw()
   updateVolumes()
@@ -208,7 +200,7 @@ function curve(val: number) {
 
 function lerp(val: number, min: number, max: number, curve: number) {
   const ret = Math.min(min, max) + (Math.abs(max - min) * (val ** curve))
-  //debug('VAL=' + val + ' CURVE=' + curve + ' VALC=' + (val ** curve) + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
+  //log('VAL=' + val + ' CURVE=' + curve + ' VALC=' + (val ** curve) + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
   return ret
 }
 
@@ -235,15 +227,15 @@ function updateVolumes() {
   for (var i = 0; i < state.numChains; i++) {
     const ballPos = ballIncr * i
     const volume = calcVolumeAt(ballPos)
-    //debug('VOLUME: ' + volume)
+    //log('VOLUME: ' + volume)
     outlet(OUTLET_VAL, [i + 1, volume * 0.85])
   }
 }
 
 function trackColorCallback(slot: number, iargs: IArguments) {
-  //debug('TRACK COLOR CALLBACK')
+  //log('TRACK COLOR CALLBACK')
   const args = arrayfromargs(iargs)
-  //debug('TRACKCOLOR', args)
+  //log('TRACKCOLOR', args)
   if (args[0] === 'color') {
     state.colors[slot] = args[1]
     draw()
@@ -251,7 +243,7 @@ function trackColorCallback(slot: number, iargs: IArguments) {
 }
 
 function getChainIdsOf(rackObj: LiveAPI) {
-  //debug('NUMCHAINS: ' + prevDevice.get('chains').length)
+  //log('NUMCHAINS: ' + prevDevice.get('chains').length)
   return rackObj.get('chains').filter((e: any) => e !== 'id')
 }
 
@@ -269,13 +261,13 @@ function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
     return
   }
 
-  //debug('DEVICENUM = ' + thisDeviceNum)
+  //log('DEVICENUM = ' + thisDeviceNum)
 
   var prevDevicePath =
     thisDevicePathTokens.slice(0, tokenLen - 1).join(' ') +
     ' ' +
     (thisDeviceNum - 1)
-  //debug('PREVDEVICEPATH=' + prevDevicePath)
+  //log('PREVDEVICEPATH=' + prevDevicePath)
 
   var prevDevice = new LiveAPI(() => { }, prevDevicePath)
   if (!prevDevice.get('can_have_chains')) {
@@ -288,19 +280,19 @@ function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
     return
   }
 
-  //debug('NUMCHAINS: ' + prevDevice.get('chains').length)
+  //log('NUMCHAINS: ' + prevDevice.get('chains').length)
   state.parentObj = prevDevice
   const chainIds = getChainIdsOf(prevDevice)
   state.children = chainIds
 
-  //debug('CHAINIDS: ' + chainIds.join(', '))
+  //log('CHAINIDS: ' + chainIds.join(', '))
 
   for (let i = 0; i < chainIds.length; i++) {
     const chainId = chainIds[i]
     const chainObj = new LiveAPI((iargs: IArguments) => trackColorCallback(i, iargs), "id " + chainId)
     chainObj.property = 'color'
     var currChainPath = chainObj.unquotedpath + ' mixer_device volume'
-    //debug('CURR_CHAIN_PATH=' + currChainPath)
+    //log('CURR_CHAIN_PATH=' + currChainPath)
 
     state.colorObjs.push(chainObj)
     state.colors.push(chainObj.get('color'))
@@ -313,15 +305,15 @@ function getChildTracksOf(parentTrack: LiveAPI) {
   const parentId = parentTrack.id.toString()
   const api = new LiveAPI(() => { }, "live_set")
   const trackCount = api.getcount('tracks')
-  //debug('TRACK COUNT: ' + trackCount)
+  //log('TRACK COUNT: ' + trackCount)
   const childIds: number[] = []
 
   for (var index = 0; index < trackCount; index++) {
     api.path = 'live_set tracks ' + index
-    // debug('GROUP TRACK: ' + api.get('group_track'))
+    // log('GROUP TRACK: ' + api.get('group_track'))
     if (parseInt(api.get('group_track')[1]) === parseInt(parentId)) {
       childIds.push(api.id)
-      //debug('FOUND CHILD: ' + api.id + ' = ' + api.unquotedpath + ' mixer_device volume')
+      //log('FOUND CHILD: ' + api.id + ' = ' + api.unquotedpath + ' mixer_device volume')
     }
   }
 
@@ -348,43 +340,43 @@ function checkChildren() {
     return
   }
   // change in group track population
-  //debug("Change in children detected; Initializing...")
+  //log("Change in children detected; Initializing...")
   initialize()
 }
 
 
 function getGroupTrackPaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
-  //debug('GET GROUP TRACK PATHS')
+  //log('GET GROUP TRACK PATHS')
   const thisTrack = new LiveAPI(() => { }, thisDevice.get('canonical_parent'))
 
-  //debug('THIS TRACK: ' + thisTrack.id + ' ' + thisTrack.get("name"))
+  //log('THIS TRACK: ' + thisTrack.id + ' ' + thisTrack.get("name"))
   if (thisTrack.get('is_foldable')) {
     // THIS IS A GROUP TRACK
-    //debug('GROUP TRACK')
+    //log('GROUP TRACK')
     state.parentObj = thisTrack
     state.children = getChildTracksOf(thisTrack)
-    //debug('CHILDREN: ' + state.children)
+    //log('CHILDREN: ' + state.children)
     for (let i = 0; i < state.children.length; i++) {
       const childTrackId = state.children[i]
       const childTrack = new LiveAPI((iargs: IArguments) => trackColorCallback(i, iargs), "id " + childTrackId)
-      //debug('GROUP TRACK: ' + childTrack.get('group_track'))
+      //log('GROUP TRACK: ' + childTrack.get('group_track'))
       volumeDevicePaths.push(childTrack.unquotedpath + ' mixer_device volume')
       state.colors.push(childTrack.get('color'))
       childTrack.property = 'color'
       state.colorObjs.push(childTrack)
-      //debug('FOUND CHILD: ' + api.id + ' = ' + api.unquotedpath + ' mixer_device volume')
+      //log('FOUND CHILD: ' + api.id + ' = ' + api.unquotedpath + ' mixer_device volume')
     }
   }
 }
 
 function initialize() {
-  //debug('INITIALIZE')
+  //log('INITIALIZE')
   var thisDevice = new LiveAPI(() => { }, 'live_set this_device')
   state.parentObj = null
   state.numChains = 0
   state.colors = []
   state.colorObjs = []
-  //debug('THIS DEVICE: ' + thisDevice.id)
+  //log('THIS DEVICE: ' + thisDevice.id)
 
   // populate volumeDevicePaths either from a rack device (instrument or effect)
   // or as the parent of a track group
@@ -396,12 +388,12 @@ function initialize() {
     state.type = "group"
   }
 
-  //debug('PATHS: ' + volumeDevicePaths.join(', '))
+  //log('PATHS: ' + volumeDevicePaths.join(', '))
 
   // properly let go of devices for existing live.remote~ objects
   for (var i = 0; i < MAX_PARAMS; i++) {
     outlet(OUTLET_IDS, [i + 1, 'id', 0])
-    //debug('REMOVED ' + (i + 1))
+    //log('REMOVED ' + (i + 1))
   }
 
   const lookupApi = new LiveAPI(() => { }, "live_set")
@@ -410,11 +402,11 @@ function initialize() {
     var currChainPath = volumeDevicePaths[currChain]
     lookupApi.path = currChainPath
     if (!lookupApi.path) {
-      //debug('last one okay!')
+      //log('last one okay!')
       break
     }
     const deviceParamId = lookupApi.id
-    //debug('PARAM_ID: ' + deviceParamId)
+    //log('PARAM_ID: ' + deviceParamId)
     outlet(OUTLET_IDS, [currChain + 1, 'id', deviceParamId])
   }
 
@@ -424,7 +416,12 @@ function initialize() {
     setStatus('ERR: Put me after a rack or in a group.')
   }
   state.numChains = currChain
-  //debug('CHAINS: ' + state.numChains)
+  //log('CHAINS: ' + state.numChains)
   updateVolumes()
   draw()
 }
+
+// NOTE: This section must appear in any .ts file that is directuly used by a
+// [js] or [jsui] object so that tsc generates valid JS for Max.
+const module = {}
+export = {}
