@@ -20,6 +20,7 @@ If you're interested in this, then you may also be interested in my other device
 
 ## Changelog
 
+- 2024-12-07 [v8](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v8/ChiasticSlide-v8.amxd) - Fixes a bug when the endless direction knob is automated to 0 or 360 disabling automation.
 - 2024-11-29 [v7](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v7/ChiasticSlide-v7.amxd) - Accurately show pickup pattern. Math is fun! Direction knob is _endless_. Feedback welcome on if this is problematic. For me it is 10x the fun.
 - 2024-10-29 [v6](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v6/ChiasticSlide-v6.amxd) - Add non-blocking telemetry ping on load. Does not send any identifying information, only the plugin name, the local computer name, type of computer, and CPU type. I just want to see which plugins are used the most.
 - 2024-09-13 [v5](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v5/ChiasticSlide-v5.amxd) - Track changes in track/chain colors and children adding/removing/reordering.
