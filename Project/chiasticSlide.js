@@ -112,7 +112,7 @@ function paint() {
     // outer arc
     mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg_alt'));
     mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad);
-    mgraphics.set_line_width(0.05);
+    mgraphics.set_line_width(0.03);
     mgraphics.stroke();
     // center circle
     mgraphics.set_source_rgb(max.getcolor('live_lcd_frame'));
