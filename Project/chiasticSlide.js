@@ -74,6 +74,15 @@ function paint() {
     var endPos = adjPos + halfW;
     var startRad = deg2rad(startPos);
     var endRad = deg2rad(endPos);
+    // minvol circle
+    if (state.minVol) {
+        mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg'));
+        mgraphics.arc(0, 0, DIAL_WIDTH, 0, TAU);
+        mgraphics.fill();
+        mgraphics.set_source_rgb(max.getcolor('live_lcd_bg'));
+        mgraphics.arc(0, 0, DIAL_WIDTH * (1 - calcVolumeAt((state.pos + 180) % 360)), 0, TAU);
+        mgraphics.fill();
+    }
     // nubbin
     var NUBBIN_DIA = 0.15;
     mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg_alt'));
@@ -81,11 +90,7 @@ function paint() {
     var adjY = 0.85 * DIAL_WIDTH * Math.sin(-adjRad);
     mgraphics.arc(adjX, adjY, NUBBIN_DIA, 0, TAU);
     mgraphics.fill();
-    // outer arc
-    mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg_alt'));
-    mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad);
-    mgraphics.stroke();
-    // width arc
+    // width shape (arc + curve viz)
     mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg'));
     mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad);
     var sampleStartPos = state.pos - halfW;
@@ -94,7 +99,7 @@ function paint() {
     var STEPS = 80;
     for (var samplePos = sampleEndPos; samplePos >= sampleStartPos; samplePos -= distance / STEPS) {
         var sampleRad = deg2rad((270 + samplePos) % 360); // need to adjust for plotted points
-        var volume = calcVolumeAt(samplePos); // un-adjusted for volume calc
+        var volume = calcVolumeAt(samplePos);
         //log('VOLUME: ' + volume + ' POS: ' + samplePos)
         var sampleX = DIAL_WIDTH * (1 - volume) * Math.cos(sampleRad);
         var sampleY = DIAL_WIDTH * (1 - volume) * Math.sin(-sampleRad);
@@ -104,6 +109,11 @@ function paint() {
     var startY = DIAL_WIDTH * Math.sin(-startRad);
     mgraphics.line_to(startX, startY);
     mgraphics.fill();
+    // outer arc
+    mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg_alt'));
+    mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad);
+    mgraphics.set_line_width(0.05);
+    mgraphics.stroke();
     // center circle
     mgraphics.set_source_rgb(max.getcolor('live_lcd_frame'));
     mgraphics.arc(0, 0, 0.1, 0, TAU);
@@ -205,7 +215,11 @@ function trackColorCallback(slot, iargs) {
 }
 function getChainIdsOf(rackObj) {
     //log('NUMCHAINS: ' + prevDevice.get('chains').length)
-    return rackObj.get('chains').filter(function (e) { return e !== 'id'; });
+    var chains = rackObj.get('chains');
+    if (!chains) {
+        return [];
+    }
+    return chains.filter(function (e) { return e !== 'id'; });
 }
 function getRackDevicePaths(thisDevice, volumeDevicePaths) {
     var thisDevicePathTokens = thisDevice.unquotedpath.split(' ');

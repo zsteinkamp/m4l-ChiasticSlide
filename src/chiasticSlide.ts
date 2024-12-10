@@ -92,6 +92,16 @@ function paint() {
   const startRad = deg2rad(startPos)
   const endRad = deg2rad(endPos)
 
+  // minvol circle
+  if (state.minVol) {
+    mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg'))
+    mgraphics.arc(0, 0, DIAL_WIDTH, 0, TAU)
+    mgraphics.fill()
+    mgraphics.set_source_rgb(max.getcolor('live_lcd_bg'))
+    mgraphics.arc(0, 0, DIAL_WIDTH * (1 - calcVolumeAt((state.pos + 180) % 360)), 0, TAU)
+    mgraphics.fill()
+  }
+
   // nubbin
   const NUBBIN_DIA = 0.15
   mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg_alt'))
@@ -100,12 +110,7 @@ function paint() {
   mgraphics.arc(adjX, adjY, NUBBIN_DIA, 0, TAU)
   mgraphics.fill()
 
-  // outer arc
-  mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg_alt'))
-  mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad)
-  mgraphics.stroke()
-
-  // width arc
+  // width shape (arc + curve viz)
   mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg'))
   mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad)
 
@@ -116,7 +121,7 @@ function paint() {
   const STEPS = 80
   for (let samplePos = sampleEndPos; samplePos >= sampleStartPos; samplePos -= distance / STEPS) {
     const sampleRad = deg2rad((270 + samplePos) % 360) // need to adjust for plotted points
-    const volume = calcVolumeAt(samplePos) // un-adjusted for volume calc
+    const volume = calcVolumeAt(samplePos)
     //log('VOLUME: ' + volume + ' POS: ' + samplePos)
     const sampleX = DIAL_WIDTH * (1 - volume) * Math.cos(sampleRad)
     const sampleY = DIAL_WIDTH * (1 - volume) * Math.sin(-sampleRad)
@@ -126,6 +131,12 @@ function paint() {
   const startY = DIAL_WIDTH * Math.sin(-startRad)
   mgraphics.line_to(startX, startY)
   mgraphics.fill()
+
+  // outer arc
+  mgraphics.set_source_rgb(max.getcolor('live_lcd_control_fg_alt'))
+  mgraphics.arc(0, 0, DIAL_WIDTH, startRad, endRad)
+  mgraphics.set_line_width(0.05)
+  mgraphics.stroke()
 
   // center circle
   mgraphics.set_source_rgb(max.getcolor('live_lcd_frame'))
@@ -244,7 +255,12 @@ function trackColorCallback(slot: number, iargs: IArguments) {
 
 function getChainIdsOf(rackObj: LiveAPI) {
   //log('NUMCHAINS: ' + prevDevice.get('chains').length)
-  return rackObj.get('chains').filter((e: any) => e !== 'id')
+  const chains = rackObj.get('chains')
+
+  if (!chains) {
+    return []
+  }
+  return chains.filter((e: any) => e !== 'id')
 }
 
 function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
