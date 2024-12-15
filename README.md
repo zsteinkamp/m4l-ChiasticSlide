@@ -20,6 +20,7 @@ If you're interested in this, then you may also be interested in my other device
 
 ## Changelog
 
+- 2024-12-15 [v10](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v10/ChiasticSlide-v10.amxd) - Adds two "Auto" buttons to set up the device to fade between the number of sources with even volume, regardless of direction setting. A1 only works well when there are > 3 chains. Again, thanks @Luke-KB for the idea.
 - 2024-12-11 [v9](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v9/ChiasticSlide-v9.amxd) - Adds an automation-aware toggle for the endless direction knob. Thanks again @Luke-KB for the feedback! Also makes the visualization more accurate when min/max vol is used.
 - 2024-12-07 [v8](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v8/ChiasticSlide-v8.amxd) - Fixes a bug when the endless direction knob is automated to 0 or 360 disabling automation.
 - 2024-11-29 [v7](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v7/ChiasticSlide-v7.amxd) - Accurately show pickup pattern. Math is fun! Direction knob is _endless_. Feedback welcome on if this is problematic. For me it is 10x the fun.

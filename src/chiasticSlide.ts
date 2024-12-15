@@ -1,6 +1,6 @@
 autowatch = 1
 inlets = 1
-outlets = 2
+outlets = 3
 
 import { logFactory } from './utils'
 
@@ -14,11 +14,13 @@ setinletassist(0, '<Bang> to initialize, <Float> to fade.')
 const MAX_PARAMS = 32
 const OUTLET_VAL = 0
 const OUTLET_IDS = 1
+const OUTLET_CTL = 2
 setoutletassist(OUTLET_VAL, '<chain idx, val> Volume value for given chain.')
 setoutletassist(
   OUTLET_IDS,
   '<chain idx, id, param_id> messages to map live.remote to device id param_id.'
 )
+setoutletassist(OUTLET_CTL, 'Control messages for parameter UI elements.')
 
 function parseColor(colorNum: number) {
   // jsui: draw  COLORS: 16725558, 10208397, 16725558   
@@ -63,6 +65,21 @@ function bang() {
   //log('INIT')
   setStatus('Initializing...')
   initialize()
+}
+
+function auto() {
+  outlet(OUTLET_CTL, "width", (360.0 / state.numChains) * (state.numChains - 1))
+  outlet(OUTLET_CTL, "curve", 1)
+  outlet(OUTLET_CTL, "minvol", 0)
+  outlet(OUTLET_CTL, "maxvol", 100)
+  outlet(OUTLET_CTL, "power", 1)
+}
+function auto2() {
+  outlet(OUTLET_CTL, "width", (360.0 / state.numChains) * 2)
+  outlet(OUTLET_CTL, "curve", 0.5)
+  outlet(OUTLET_CTL, "minvol", 0)
+  outlet(OUTLET_CTL, "maxvol", 100)
+  outlet(OUTLET_CTL, "power", 1)
 }
 
 function draw() {
