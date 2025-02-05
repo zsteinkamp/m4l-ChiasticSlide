@@ -57,6 +57,10 @@ If you are looking to perfectly fade betweeen some number of sources, with const
 ## TODO
 - ...
 
+## Developing
+
+I personally develop inside of a VSCode DevContainer. My workflow is to run `devcontainer open .`. This will build a container to run the Typescript/Node toolchain in and open VSCode in that container. It removes the need to maintain a node.js or other software toolchain on your computer.
+
 ## Contributing
 
 I'd love it if others extended this device. If you would like to contribute, simply fork this repo, make your changes, and open a pull request and I'll have a look.
