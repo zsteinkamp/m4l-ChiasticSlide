@@ -2,7 +2,7 @@
 
 Chiastic Slide is a Max for Live device that acts as a crossfader to a multi-chain device such as a Group Track, Instrument Rack or Audio Effect Rack. It can handle up to 32 chains, with control over the crossfade width.
 
-![How it Looks](images/device.gif)
+[![How it Looks](images/device.gif)](https://www.youtube.com/watch?v=LXaxa5peDVM)
 
 Chains or child tracks are shown as colored balls on the perimeter of a circle. You can control a virtual mic with the Direction control. The "pickup pattern" of the mic can be controlled with the Width and Curve controls.
 
