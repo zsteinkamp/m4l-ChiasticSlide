@@ -14,7 +14,7 @@ Traditionally, you can use this to fade between several different tracks, instru
 
 ![Full View](images/device-full.gif)
 
-If you're interested in this, then you may also be interested in my other device called [SimulScrub](https://github.com/zsteinkamp/m4l-SimulScrub).
+If you're interested in this, then you may also be interested in my other device called [SimulScrub](https://plugins.steinkamp.us/m4l-SimulScrub).
 
 ## Installation
 
