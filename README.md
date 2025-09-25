@@ -12,6 +12,8 @@ I created this plugin when I saw that the Abelton's Rack devices (Instrument Rac
 
 Traditionally, you can use this to fade between several different tracks, instruments, or effects chains. Load up a few different pads in an Instrument Rack and give it a try by adding Chiastic Slide right after the rack.
 
+![Full View](images/device-full.gif)
+
 If you're interested in this, then you may also be interested in my other device called [SimulScrub](https://github.com/zsteinkamp/m4l-SimulScrub).
 
 ## Installation
@@ -20,6 +22,7 @@ If you're interested in this, then you may also be interested in my other device
 
 ## Changelog
 
+- 2025-09-25 [v11](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v11/ChiasticSlide-v11.amxd) - Improved help popup and refreshed images in documentation.
 - 2024-12-15 [v10](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v10/ChiasticSlide-v10.amxd) - Adds two "Auto" buttons to set up the device to fade between the number of sources with even volume, regardless of direction setting. A1 only works well when there are > 3 chains. Again, thanks @Luke-KB for the idea.
 - 2024-12-11 [v9](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v9/ChiasticSlide-v9.amxd) - Adds an automation-aware toggle for the endless direction knob. Thanks again @Luke-KB for the feedback! Also makes the visualization more accurate when min/max vol is used.
 - 2024-12-07 [v8](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v8/ChiasticSlide-v8.amxd) - Fixes a bug when the endless direction knob is automated to 0 or 360 disabling automation.
@@ -37,9 +40,15 @@ Add this device to a Group Track or immediately after an Instrument Rack or Audi
 
 `Direction` - Controls where the virtual microphone is pointed.
 
+`Limit / Endless` - Controls whether the Direction dial stops at its limits or behaves as an endless dial. Endless is fun!
+
 `Width` - Adjust how many adjacent sources are audible, i.e. the "pickup pattern" of the mic.
 
+`A1` / `A2` - Two different auto settings for even-power crossfading.
+
 `Curve` - Adjusts the falloff of the pickup pattern. Low values raise the volume of adjacent sources.
+
+`Linear` / `Cosine` - Controls the impact of the Curve parameter on the actual output.
 
 `Min Vol` - The minimum volume level.
 
@@ -47,20 +56,9 @@ Add this device to a Group Track or immediately after an Instrument Rack or Audi
 
 `Rescan` - Click this if you add, remove, or change the color of  tracks/chains.
 
-## Constant Power
-
-If you are looking to perfectly fade betweeen some number of sources, with constant volume regardless of `Direction` setting, then consider the following.
-
-1) Set the `Width` to 2 * (360 / N), where N is the number of sources. So for 6 sources, set the width to 120. For 4 sources, set to 180, etc.
-2) Set the `Curve` value to 0.32. If you are using the experimental, unreleased Constant Power option, then set `Curve` to 0.64.
-
 ## TODO
 - ...
 
 ## Developing
 
 I personally develop inside of a VSCode DevContainer. My workflow is to run `devcontainer open .`. This will build a container to run the Typescript/Node toolchain in and open VSCode in that container. It removes the need to maintain a node.js or other software toolchain on your computer.
-
-## Contributing
-
-I'd love it if others extended this device. If you would like to contribute, simply fork this repo, make your changes, and open a pull request and I'll have a look.
