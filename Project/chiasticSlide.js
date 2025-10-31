@@ -16,7 +16,7 @@ setoutletassist(OUTLET_VAL, '<chain idx, val> Volume value for given chain.');
 setoutletassist(OUTLET_IDS, '<chain idx, id, param_id> messages to map live.remote to device id param_id.');
 setoutletassist(OUTLET_CTL, 'Control messages for parameter UI elements.');
 function parseColor(colorNum) {
-    // jsui: draw  COLORS: 16725558, 10208397, 16725558   
+    // jsui: draw  COLORS: 16725558, 10208397, 16725558
     return {
         r: ((colorNum >> 16) & 255) / 255.0,
         g: ((colorNum >> 8) & 255) / 255.0,
@@ -35,6 +35,9 @@ function polarToXY(deg, len) {
 }
 log('reloaded');
 var state = {
+    thisDevice: null,
+    lastPath: '',
+    pathCheckerTask: null,
     children: [],
     colorObjs: [],
     colors: [],
@@ -45,8 +48,8 @@ var state = {
     numChains: 0,
     parentObj: null,
     pos: 0,
-    status: "",
-    type: "",
+    status: '',
+    type: '',
     width: 90,
 };
 function bang() {
@@ -55,18 +58,18 @@ function bang() {
     initialize();
 }
 function auto() {
-    outlet(OUTLET_CTL, "width", (360.0 / state.numChains) * (state.numChains - 1));
-    outlet(OUTLET_CTL, "curve", 1);
-    outlet(OUTLET_CTL, "minvol", 0);
-    outlet(OUTLET_CTL, "maxvol", 100);
-    outlet(OUTLET_CTL, "power", 1);
+    outlet(OUTLET_CTL, 'width', (360.0 / state.numChains) * (state.numChains - 1));
+    outlet(OUTLET_CTL, 'curve', 1);
+    outlet(OUTLET_CTL, 'minvol', 0);
+    outlet(OUTLET_CTL, 'maxvol', 100);
+    outlet(OUTLET_CTL, 'power', 1);
 }
 function auto2() {
-    outlet(OUTLET_CTL, "width", (360.0 / state.numChains) * 2);
-    outlet(OUTLET_CTL, "curve", 0.5);
-    outlet(OUTLET_CTL, "minvol", 0);
-    outlet(OUTLET_CTL, "maxvol", 100);
-    outlet(OUTLET_CTL, "power", 1);
+    outlet(OUTLET_CTL, 'width', (360.0 / state.numChains) * 2);
+    outlet(OUTLET_CTL, 'curve', 0.5);
+    outlet(OUTLET_CTL, 'minvol', 0);
+    outlet(OUTLET_CTL, 'maxvol', 100);
+    outlet(OUTLET_CTL, 'power', 1);
 }
 function draw() {
     mgraphics.redraw();
@@ -75,7 +78,7 @@ var CANVAS_W = 169;
 var CANVAS_H = 169;
 var TAU = 2 * Math.PI;
 function deg2rad(deg) {
-    return deg * Math.PI / 180;
+    return (deg * Math.PI) / 180;
 }
 function paint() {
     // background
@@ -136,7 +139,7 @@ function paint() {
     mgraphics.fill();
     // balls
     var BALL_DIST = 0.85;
-    var BALL_RADIUS = 0.10;
+    var BALL_RADIUS = 0.1;
     var ballIncr = 360.0 / state.numChains;
     for (var i = 0; i < state.numChains; i++) {
         //log('BALL ' + i + ': ' + ballIncr * i)
@@ -192,7 +195,7 @@ function curve(val) {
     updateVolumes();
 }
 function lerp(val, min, max, curve) {
-    var ret = Math.min(min, max) + (Math.abs(max - min) * (Math.pow(val, curve)));
+    var ret = Math.min(min, max) + Math.abs(max - min) * Math.pow(val, curve);
     //log('VAL=' + val + ' CURVE=' + curve + ' VALC=' + (val ** curve) + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
     return ret;
 }
@@ -202,11 +205,11 @@ function calcVolumeAt(inPos) {
     if (delta > 180) {
         delta = 360 - delta;
     }
-    var volume = Math.max(1 - (delta / halfW), 0);
+    var volume = Math.max(1 - delta / halfW, 0);
     volume = lerp(volume, state.minVol, state.maxVol, state.curve);
     // constant power volume adjustment
     if (state.constantPower) {
-        volume = Math.sin(volume * Math.PI / 2);
+        volume = Math.sin((volume * Math.PI) / 2);
     }
     return volume;
 }
@@ -241,6 +244,14 @@ function getRackDevicePaths(thisDevice, volumeDevicePaths) {
     var thisDevicePathTokens = thisDevice.unquotedpath.split(' ');
     var tokenLen = thisDevicePathTokens.length;
     var thisDeviceNum = parseInt(thisDevicePathTokens[tokenLen - 1]);
+    //log(
+    //  'GRDP: id=' +
+    //    thisDevice.id +
+    //    ' len=' +
+    //    tokenLen +
+    //    ' devNum=' +
+    //    thisDeviceNum
+    //)
     if (isNaN(thisDeviceNum)) {
         setStatus('ERROR: NaN device num :(');
         return;
@@ -270,13 +281,13 @@ function getRackDevicePaths(thisDevice, volumeDevicePaths) {
     state.children = chainIds;
     var _loop_1 = function (i) {
         var chainId = chainIds[i];
-        var chainObj = new LiveAPI(function (iargs) { return trackColorCallback(i, iargs); }, "id " + chainId);
+        var chainObj = new LiveAPI(function (iargs) { return trackColorCallback(i, iargs); }, 'id ' + chainId);
         chainObj.property = 'color';
         currChainPath = chainObj.unquotedpath + ' mixer_device volume';
         //log('CURR_CHAIN_PATH=' + currChainPath)
         state.colorObjs.push(chainObj);
         state.colors.push(chainObj.get('color'));
-        // jsui: initialize  PATHS: "" mixer_device volume, "live_set tracks 6 devices 0 chains 1" mixer_device volume, "live_set tracks 6 devices 0 chains 2" mixer_device volume   
+        // jsui: initialize  PATHS: "" mixer_device volume, "live_set tracks 6 devices 0 chains 1" mixer_device volume, "live_set tracks 6 devices 0 chains 2" mixer_device volume
         volumeDevicePaths.push(currChainPath);
     };
     var currChainPath;
@@ -287,13 +298,13 @@ function getRackDevicePaths(thisDevice, volumeDevicePaths) {
 }
 function getChildTracksOf(parentTrack) {
     var parentId = parentTrack.id.toString();
-    var api = new LiveAPI(function () { }, "live_set");
+    var api = new LiveAPI(function () { }, 'live_set');
     var trackCount = api.getcount('tracks');
     //log('TRACK COUNT: ' + trackCount)
     var childIds = [];
     for (var index = 0; index < trackCount; index++) {
         api.path = 'live_set tracks ' + index;
-        // log('GROUP TRACK: ' + api.get('group_track'))
+        //log('GROUP TRACK: ' + api.get('group_track'))
         if (parseInt(api.get('group_track')[1]) === parseInt(parentId)) {
             childIds.push(api.id);
             //log('FOUND CHILD: ' + api.id + ' = ' + api.unquotedpath + ' mixer_device volume')
@@ -316,7 +327,10 @@ function checkChildren() {
     if (!currChildren) {
         return;
     }
-    if (state.children.length === currChildren.length && state.children.every(function (value, index) { return value === currChildren[index]; })) {
+    if (state.children.length === currChildren.length &&
+        state.children.every(function (value, index) {
+            return value === currChildren[index];
+        })) {
         // no change, arrays are the same
         return;
     }
@@ -335,7 +349,7 @@ function getGroupTrackPaths(thisDevice, volumeDevicePaths) {
         state.children = getChildTracksOf(thisTrack);
         var _loop_2 = function (i) {
             var childTrackId = state.children[i];
-            var childTrack = new LiveAPI(function (iargs) { return trackColorCallback(i, iargs); }, "id " + childTrackId);
+            var childTrack = new LiveAPI(function (iargs) { return trackColorCallback(i, iargs); }, 'id ' + childTrackId);
             //log('GROUP TRACK: ' + childTrack.get('group_track'))
             volumeDevicePaths.push(childTrack.unquotedpath + ' mixer_device volume');
             state.colors.push(childTrack.get('color'));
@@ -348,22 +362,48 @@ function getGroupTrackPaths(thisDevice, volumeDevicePaths) {
         }
     }
 }
+function checkPath(args) {
+    //log('PATH CHeECK')
+    if (state.thisDevice) {
+        if (!state.lastPath) {
+            state.lastPath = state.thisDevice.path;
+            return;
+        }
+        if (state.thisDevice.path !== state.lastPath) {
+            //log('PATH CHANGE')
+            state.lastPath = state.thisDevice.path;
+            doInit();
+        }
+    }
+}
 function initialize() {
-    //log('INITIALIZE')
-    var thisDevice = new LiveAPI(function () { }, 'live_set this_device');
+    var t = new Task(doInit);
+    t.schedule(1);
+    if (state.pathCheckerTask) {
+        state.pathCheckerTask.cancel();
+    }
+    state.pathCheckerTask = new Task(checkPath);
+    state.pathCheckerTask.interval = 1000;
+    state.pathCheckerTask.repeat(null);
+}
+function doInit() {
+    //log('INITIALIZzzzzzE')
+    if (!state.thisDevice) {
+        state.thisDevice = new LiveAPI(function () { }, 'this_device');
+    }
+    //log('THIS DEVICE id=' + state.thisDevice.id)
     state.parentObj = null;
     state.numChains = 0;
     state.colors = [];
     state.colorObjs = [];
-    //log('THIS DEVICE: ' + thisDevice.id)
     // populate volumeDevicePaths either from a rack device (instrument or effect)
     // or as the parent of a track group
     var volumeDevicePaths = [];
-    state.type = "rack";
-    getRackDevicePaths(thisDevice, volumeDevicePaths);
+    state.type = 'rack';
+    getRackDevicePaths(state.thisDevice, volumeDevicePaths);
     if (volumeDevicePaths.length === 0) {
-        getGroupTrackPaths(thisDevice, volumeDevicePaths);
-        state.type = "group";
+        getGroupTrackPaths(state.thisDevice, volumeDevicePaths);
+        state.type = 'group';
     }
     //log('PATHS: ' + volumeDevicePaths.join(', '))
     // properly let go of devices for existing live.remote~ objects
@@ -371,7 +411,7 @@ function initialize() {
         outlet(OUTLET_IDS, [i + 1, 'id', 0]);
         //log('REMOVED ' + (i + 1))
     }
-    var lookupApi = new LiveAPI(function () { }, "live_set");
+    var lookupApi = new LiveAPI(function () { }, 'live_set');
     var currChain;
     for (currChain = 0; currChain < volumeDevicePaths.length; currChain++) {
         var currChainPath = volumeDevicePaths[currChain];

@@ -23,7 +23,7 @@ setoutletassist(
 setoutletassist(OUTLET_CTL, 'Control messages for parameter UI elements.')
 
 function parseColor(colorNum: number) {
-  // jsui: draw  COLORS: 16725558, 10208397, 16725558   
+  // jsui: draw  COLORS: 16725558, 10208397, 16725558
   return {
     r: ((colorNum >> 16) & 255) / 255.0,
     g: ((colorNum >> 8) & 255) / 255.0,
@@ -37,7 +37,7 @@ function adjustDeg(deg: number) {
 
 function polarToXY(deg: number, len: number) {
   const ret = { x: 0, y: 0 }
-  const rads = adjustDeg(deg) * (Math.PI / 180);
+  const rads = adjustDeg(deg) * (Math.PI / 180)
   ret.y = Math.sin(rads) * len
   ret.x = Math.cos(rads) * len
   return ret
@@ -46,6 +46,9 @@ function polarToXY(deg: number, len: number) {
 log('reloaded')
 
 const state = {
+  thisDevice: null as LiveAPI,
+  lastPath: '' as string,
+  pathCheckerTask: null as Task,
   children: [] as number[],
   colorObjs: [] as LiveAPI[],
   colors: [] as number[],
@@ -56,8 +59,8 @@ const state = {
   numChains: 0,
   parentObj: null as LiveAPI,
   pos: 0,
-  status: "",
-  type: "" as ("rack" | "group"),
+  status: '',
+  type: '' as 'rack' | 'group',
   width: 90,
 }
 
@@ -68,18 +71,18 @@ function bang() {
 }
 
 function auto() {
-  outlet(OUTLET_CTL, "width", (360.0 / state.numChains) * (state.numChains - 1))
-  outlet(OUTLET_CTL, "curve", 1)
-  outlet(OUTLET_CTL, "minvol", 0)
-  outlet(OUTLET_CTL, "maxvol", 100)
-  outlet(OUTLET_CTL, "power", 1)
+  outlet(OUTLET_CTL, 'width', (360.0 / state.numChains) * (state.numChains - 1))
+  outlet(OUTLET_CTL, 'curve', 1)
+  outlet(OUTLET_CTL, 'minvol', 0)
+  outlet(OUTLET_CTL, 'maxvol', 100)
+  outlet(OUTLET_CTL, 'power', 1)
 }
 function auto2() {
-  outlet(OUTLET_CTL, "width", (360.0 / state.numChains) * 2)
-  outlet(OUTLET_CTL, "curve", 0.5)
-  outlet(OUTLET_CTL, "minvol", 0)
-  outlet(OUTLET_CTL, "maxvol", 100)
-  outlet(OUTLET_CTL, "power", 1)
+  outlet(OUTLET_CTL, 'width', (360.0 / state.numChains) * 2)
+  outlet(OUTLET_CTL, 'curve', 0.5)
+  outlet(OUTLET_CTL, 'minvol', 0)
+  outlet(OUTLET_CTL, 'maxvol', 100)
+  outlet(OUTLET_CTL, 'power', 1)
 }
 
 function draw() {
@@ -91,14 +94,14 @@ const CANVAS_H = 169
 const TAU = 2 * Math.PI
 
 function deg2rad(deg: number) {
-  return deg * Math.PI / 180
+  return (deg * Math.PI) / 180
 }
 
 function paint() {
   // background
   mgraphics.set_source_rgb(max.getcolor('live_lcd_bg'))
-  mgraphics.rectangle(-1.0, 1, 2, 2);
-  mgraphics.fill();
+  mgraphics.rectangle(-1.0, 1, 2, 2)
+  mgraphics.fill()
 
   const DIAL_WIDTH = 0.65
   const halfW = state.width / 2.0
@@ -115,7 +118,13 @@ function paint() {
     mgraphics.arc(0, 0, DIAL_WIDTH, 0, TAU)
     mgraphics.fill()
     mgraphics.set_source_rgb(max.getcolor('live_lcd_bg'))
-    mgraphics.arc(0, 0, DIAL_WIDTH * (1 - calcVolumeAt((state.pos + 180) % 360)), 0, TAU)
+    mgraphics.arc(
+      0,
+      0,
+      DIAL_WIDTH * (1 - calcVolumeAt((state.pos + 180) % 360)),
+      0,
+      TAU
+    )
     mgraphics.fill()
   }
 
@@ -136,7 +145,11 @@ function paint() {
 
   const distance = Math.abs(sampleStartPos - sampleEndPos)
   const STEPS = 80
-  for (let samplePos = sampleEndPos; samplePos >= sampleStartPos; samplePos -= distance / STEPS) {
+  for (
+    let samplePos = sampleEndPos;
+    samplePos >= sampleStartPos;
+    samplePos -= distance / STEPS
+  ) {
     const sampleRad = deg2rad((270 + samplePos) % 360) // need to adjust for plotted points
     const volume = calcVolumeAt(samplePos)
     //log('VOLUME: ' + volume + ' POS: ' + samplePos)
@@ -158,11 +171,11 @@ function paint() {
   // center circle
   mgraphics.set_source_rgb(max.getcolor('live_lcd_frame'))
   mgraphics.arc(0, 0, 0.1, 0, TAU)
-  mgraphics.fill();
+  mgraphics.fill()
 
   // balls
   const BALL_DIST = 0.85
-  const BALL_RADIUS = 0.10
+  const BALL_RADIUS = 0.1
   const ballIncr = 360.0 / state.numChains
   for (let i = 0; i < state.numChains; i++) {
     //log('BALL ' + i + ': ' + ballIncr * i)
@@ -171,7 +184,7 @@ function paint() {
     mgraphics.set_source_rgb(color.r, color.g, color.b)
     const pos = polarToXY(ballIncr * i, BALL_DIST)
     mgraphics.arc(pos.x, pos.y, BALL_RADIUS, 0, TAU)
-    mgraphics.fill();
+    mgraphics.fill()
   }
 
   mgraphics.set_source_rgb(max.getcolor('live_lcd_title'))
@@ -227,7 +240,7 @@ function curve(val: number) {
 }
 
 function lerp(val: number, min: number, max: number, curve: number) {
-  const ret = Math.min(min, max) + (Math.abs(max - min) * (val ** curve))
+  const ret = Math.min(min, max) + Math.abs(max - min) * val ** curve
   //log('VAL=' + val + ' CURVE=' + curve + ' VALC=' + (val ** curve) + ' MIN=' + min + ' MAX=' + max + ' RET=' + ret)
   return ret
 }
@@ -238,12 +251,12 @@ function calcVolumeAt(inPos: number) {
   if (delta > 180) {
     delta = 360 - delta
   }
-  let volume = Math.max(1 - (delta / halfW), 0)
+  let volume = Math.max(1 - delta / halfW, 0)
 
   volume = lerp(volume, state.minVol, state.maxVol, state.curve)
   // constant power volume adjustment
   if (state.constantPower) {
-    volume = Math.sin(volume * Math.PI / 2)
+    volume = Math.sin((volume * Math.PI) / 2)
   }
 
   return volume
@@ -285,6 +298,15 @@ function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
   var tokenLen = thisDevicePathTokens.length
   var thisDeviceNum = parseInt(thisDevicePathTokens[tokenLen - 1])
 
+  //log(
+  //  'GRDP: id=' +
+  //    thisDevice.id +
+  //    ' len=' +
+  //    tokenLen +
+  //    ' devNum=' +
+  //    thisDeviceNum
+  //)
+
   if (isNaN(thisDeviceNum)) {
     setStatus('ERROR: NaN device num :(')
     return
@@ -302,7 +324,7 @@ function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
     (thisDeviceNum - 1)
   //log('PREVDEVICEPATH=' + prevDevicePath)
 
-  var prevDevice = new LiveAPI(() => { }, prevDevicePath)
+  var prevDevice = new LiveAPI(() => {}, prevDevicePath)
   if (!prevDevice.get('can_have_chains')) {
     // prev device needs to support chains
     return
@@ -322,28 +344,31 @@ function getRackDevicePaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
 
   for (let i = 0; i < chainIds.length; i++) {
     const chainId = chainIds[i]
-    const chainObj = new LiveAPI((iargs: IArguments) => trackColorCallback(i, iargs), "id " + chainId)
+    const chainObj = new LiveAPI(
+      (iargs: IArguments) => trackColorCallback(i, iargs),
+      'id ' + chainId
+    )
     chainObj.property = 'color'
     var currChainPath = chainObj.unquotedpath + ' mixer_device volume'
     //log('CURR_CHAIN_PATH=' + currChainPath)
 
     state.colorObjs.push(chainObj)
     state.colors.push(chainObj.get('color'))
-    // jsui: initialize  PATHS: "" mixer_device volume, "live_set tracks 6 devices 0 chains 1" mixer_device volume, "live_set tracks 6 devices 0 chains 2" mixer_device volume   
+    // jsui: initialize  PATHS: "" mixer_device volume, "live_set tracks 6 devices 0 chains 1" mixer_device volume, "live_set tracks 6 devices 0 chains 2" mixer_device volume
     volumeDevicePaths.push(currChainPath)
   }
 }
 
 function getChildTracksOf(parentTrack: LiveAPI) {
   const parentId = parentTrack.id.toString()
-  const api = new LiveAPI(() => { }, "live_set")
+  const api = new LiveAPI(() => {}, 'live_set')
   const trackCount = api.getcount('tracks')
   //log('TRACK COUNT: ' + trackCount)
   const childIds: number[] = []
 
   for (var index = 0; index < trackCount; index++) {
     api.path = 'live_set tracks ' + index
-    // log('GROUP TRACK: ' + api.get('group_track'))
+    //log('GROUP TRACK: ' + api.get('group_track'))
     if (parseInt(api.get('group_track')[1]) === parseInt(parentId)) {
       childIds.push(api.id)
       //log('FOUND CHILD: ' + api.id + ' = ' + api.unquotedpath + ' mixer_device volume')
@@ -368,7 +393,12 @@ function checkChildren() {
   if (!currChildren) {
     return
   }
-  if (state.children.length === currChildren.length && state.children.every(function (value, index) { return value === currChildren[index] })) {
+  if (
+    state.children.length === currChildren.length &&
+    state.children.every(function (value, index) {
+      return value === currChildren[index]
+    })
+  ) {
     // no change, arrays are the same
     return
   }
@@ -377,10 +407,9 @@ function checkChildren() {
   initialize()
 }
 
-
 function getGroupTrackPaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
   //log('GET GROUP TRACK PATHS')
-  const thisTrack = new LiveAPI(() => { }, thisDevice.get('canonical_parent'))
+  const thisTrack = new LiveAPI(() => {}, thisDevice.get('canonical_parent'))
 
   //log('THIS TRACK: ' + thisTrack.id + ' ' + thisTrack.get("name"))
   if (thisTrack.get('is_foldable')) {
@@ -391,7 +420,10 @@ function getGroupTrackPaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
     //log('CHILDREN: ' + state.children)
     for (let i = 0; i < state.children.length; i++) {
       const childTrackId = state.children[i]
-      const childTrack = new LiveAPI((iargs: IArguments) => trackColorCallback(i, iargs), "id " + childTrackId)
+      const childTrack = new LiveAPI(
+        (iargs: IArguments) => trackColorCallback(i, iargs),
+        'id ' + childTrackId
+      )
       //log('GROUP TRACK: ' + childTrack.get('group_track'))
       volumeDevicePaths.push(childTrack.unquotedpath + ' mixer_device volume')
       state.colors.push(childTrack.get('color'))
@@ -402,23 +434,50 @@ function getGroupTrackPaths(thisDevice: LiveAPI, volumeDevicePaths: string[]) {
   }
 }
 
+function checkPath(args: IArguments) {
+  //log('PATH CHeECK')
+  if (state.thisDevice) {
+    if (!state.lastPath) {
+      state.lastPath = state.thisDevice.path
+      return
+    }
+    if (state.thisDevice.path !== state.lastPath) {
+      //log('PATH CHANGE')
+      state.lastPath = state.thisDevice.path
+      doInit()
+    }
+  }
+}
+
 function initialize() {
-  //log('INITIALIZE')
-  var thisDevice = new LiveAPI(() => { }, 'live_set this_device')
+  var t = new Task(doInit)
+  t.schedule(1)
+  if (state.pathCheckerTask) {
+    state.pathCheckerTask.cancel()
+  }
+  state.pathCheckerTask = new Task(checkPath)
+  state.pathCheckerTask.interval = 1000
+  state.pathCheckerTask.repeat(null)
+}
+function doInit() {
+  //log('INITIALIZzzzzzE')
+  if (!state.thisDevice) {
+    state.thisDevice = new LiveAPI(() => {}, 'this_device')
+  }
+  //log('THIS DEVICE id=' + state.thisDevice.id)
   state.parentObj = null
   state.numChains = 0
   state.colors = []
   state.colorObjs = []
-  //log('THIS DEVICE: ' + thisDevice.id)
 
   // populate volumeDevicePaths either from a rack device (instrument or effect)
   // or as the parent of a track group
   var volumeDevicePaths: string[] = []
-  state.type = "rack"
-  getRackDevicePaths(thisDevice, volumeDevicePaths)
+  state.type = 'rack'
+  getRackDevicePaths(state.thisDevice, volumeDevicePaths)
   if (volumeDevicePaths.length === 0) {
-    getGroupTrackPaths(thisDevice, volumeDevicePaths)
-    state.type = "group"
+    getGroupTrackPaths(state.thisDevice, volumeDevicePaths)
+    state.type = 'group'
   }
 
   //log('PATHS: ' + volumeDevicePaths.join(', '))
@@ -429,7 +488,7 @@ function initialize() {
     //log('REMOVED ' + (i + 1))
   }
 
-  const lookupApi = new LiveAPI(() => { }, "live_set")
+  const lookupApi = new LiveAPI(() => {}, 'live_set')
   let currChain
   for (currChain = 0; currChain < volumeDevicePaths.length; currChain++) {
     var currChainPath = volumeDevicePaths[currChain]
