@@ -139,15 +139,23 @@ function paint() {
     mgraphics.fill();
     // balls
     var BALL_DIST = 0.85;
-    var BALL_RADIUS = 0.1;
     var ballIncr = 360.0 / state.numChains;
+    var BALL_RADIUS = 0.1;
     for (var i = 0; i < state.numChains; i++) {
         //log('BALL ' + i + ': ' + ballIncr * i)
         var color = parseColor(state.colors[i]);
         //log('COLOR: ' + JSON.stringify(color))
-        mgraphics.set_source_rgb(color.r, color.g, color.b);
         var pos_1 = polarToXY(ballIncr * i, BALL_DIST);
-        mgraphics.arc(pos_1.x, pos_1.y, BALL_RADIUS, 0, TAU);
+        var volume = calcVolumeAt(ballIncr * i);
+        // spoke stroke
+        //mgraphics.move_to(0, 0)
+        //mgraphics.set_source_rgb(max.getcolor('live_lcd_frame'))
+        //mgraphics.line_to(pos.x, pos.y)
+        //mgraphics.set_line_width(0.01)
+        //mgraphics.stroke()
+        //mgraphics.move_to(0, 0)
+        mgraphics.set_source_rgb(color.r, color.g, color.b);
+        mgraphics.arc(pos_1.x, pos_1.y, BALL_RADIUS * volume + BALL_RADIUS * 0.25, 0, TAU);
         mgraphics.fill();
     }
     mgraphics.set_source_rgb(max.getcolor('live_lcd_title'));

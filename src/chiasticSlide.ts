@@ -175,15 +175,29 @@ function paint() {
 
   // balls
   const BALL_DIST = 0.85
-  const BALL_RADIUS = 0.1
   const ballIncr = 360.0 / state.numChains
+  const BALL_RADIUS = 0.1
   for (let i = 0; i < state.numChains; i++) {
     //log('BALL ' + i + ': ' + ballIncr * i)
     const color = parseColor(state.colors[i])
     //log('COLOR: ' + JSON.stringify(color))
-    mgraphics.set_source_rgb(color.r, color.g, color.b)
     const pos = polarToXY(ballIncr * i, BALL_DIST)
-    mgraphics.arc(pos.x, pos.y, BALL_RADIUS, 0, TAU)
+    const volume = calcVolumeAt(ballIncr * i)
+    // spoke stroke
+    //mgraphics.move_to(0, 0)
+    //mgraphics.set_source_rgb(max.getcolor('live_lcd_frame'))
+    //mgraphics.line_to(pos.x, pos.y)
+    //mgraphics.set_line_width(0.01)
+    //mgraphics.stroke()
+    //mgraphics.move_to(0, 0)
+    mgraphics.set_source_rgb(color.r, color.g, color.b)
+    mgraphics.arc(
+      pos.x,
+      pos.y,
+      BALL_RADIUS * volume + BALL_RADIUS * 0.25,
+      0,
+      TAU
+    )
     mgraphics.fill()
   }
 

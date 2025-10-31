@@ -22,6 +22,7 @@ If you're interested in this, then you may also be interested in my other device
 
 ## Changelog
 
+- 2025-10-30 [v12](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v12/ChiasticSlide-v12.amxd) - Fix bug related to rendering audio. Thanks Dino Spiluttini for the report! Also watches for path changes to respond to being moved around the chain. Animates the size of the balls depending on volume.
 - 2025-09-25 [v11](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v11/ChiasticSlide-v11.amxd) - Improved help popup and refreshed images in documentation.
 - 2024-12-15 [v10](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v10/ChiasticSlide-v10.amxd) - Adds two "Auto" buttons to set up the device to fade between the number of sources with even volume, regardless of direction setting. A1 only works well when there are > 3 chains. Again, thanks @Luke-KB for the idea.
 - 2024-12-11 [v9](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases/download/v9/ChiasticSlide-v9.amxd) - Adds an automation-aware toggle for the endless direction knob. Thanks again @Luke-KB for the feedback! Also makes the visualization more accurate when min/max vol is used.
