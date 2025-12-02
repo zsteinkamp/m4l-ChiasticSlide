@@ -1,6 +1,6 @@
 # Chiastic Slide
 
-Chiastic Slide is a Max for Live device that acts as a crossfader to a multi-chain device such as a Group Track, Instrument Rack or Audio Effect Rack. It can handle up to 32 chains, with control over the crossfade width.
+Chiastic Slide is a Max for Live device that acts as a crossfader to a multi-chain device such as a Group Track, Instrument Rack, Drum Rack, or Audio Effect Rack. It can handle up to 32 chains, with control over the crossfade width.
 
 [![How it Looks](images/device.gif)](https://www.youtube.com/watch?v=LXaxa5peDVM)
 
@@ -18,7 +18,7 @@ If you're interested in this, then you may also be interested in my other device
 
 ## Installation
 
-[Download the .amxd file from the latest release](https://github.com/zsteinkamp/m4l-ChiasticSlide/releases) or clone this repository, and drag the `ChiasticSlide.amxd` device into a track in Ableton Live.
+Download the latest release from this page and drag the device file to your User Library in Ableton Live.
 
 ## Changelog
 
