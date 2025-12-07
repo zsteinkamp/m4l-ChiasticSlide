@@ -1,6 +1,6 @@
 # Chiastic Slide
 
-Chiastic Slide is a Max for Live device that acts as a crossfader to a multi-chain device such as a Group Track, Instrument Rack, Drum Rack, or Audio Effect Rack. It can handle up to 32 chains, with control over the crossfade width.
+Chiastic Slide multichannel crossfader for Group tracks, Audio Effect Racks, Drum Racks, and Instrument Racks, up to 32 channels. You have control over the position, and sensitivity width and curve.
 
 [![How it Looks](images/device.gif)](https://www.youtube.com/watch?v=LXaxa5peDVM)
 
